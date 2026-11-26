@@ -44,6 +44,94 @@ class _GroupScreenState extends State<GroupScreen> {
     if (ok) _refresh();
   }
 
+  /// Ticks which coaches look after this group.
+  Future<void> _assignCoaches(Group group) async {
+    final clubId = widget.club.clubId;
+    List<Map<String, dynamic>> coaches;
+    Set<String> assigned;
+    try {
+      final results = await Future.wait([
+        db
+            .from('club_members')
+            .select('user_id')
+            .eq('club_id', clubId)
+            .inFilter('role', ['head_coach', 'assistant_coach']),
+        db.from('group_coaches').select('user_id').eq('group_id', group.id),
+      ]);
+      final ids = [for (final r in results[0]) r['user_id'] as String];
+      coaches = List<Map<String, dynamic>>.from(
+        await db.from('profiles').select('id, full_name').inFilter('id', ids),
+      );
+      assigned = {for (final r in results[1]) r['user_id'] as String};
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load the coaches.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    final chosen = await showDialog<Set<String>>(
+      context: context,
+      builder: (context) {
+        final ticked = {...assigned};
+        return StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Coaches for ${group.name}'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                for (final c in coaches)
+                  CheckboxListTile(
+                    value: ticked.contains(c['id']),
+                    title: Text(
+                      (c['full_name'] as String?)?.isNotEmpty == true
+                          ? c['full_name'] as String
+                          : 'Coach',
+                    ),
+                    onChanged: (v) => setDialogState(
+                      () => v == true
+                          ? ticked.add(c['id'] as String)
+                          : ticked.remove(c['id']),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, ticked),
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+    if (chosen == null || !mounted) return;
+    final add = chosen.difference(assigned);
+    final remove = assigned.difference(chosen);
+    await runAction(context, () async {
+      if (add.isNotEmpty) {
+        await db.from('group_coaches').insert([
+          for (final id in add)
+            {'group_id': group.id, 'club_id': clubId, 'user_id': id},
+        ]);
+      }
+      if (remove.isNotEmpty) {
+        await db
+            .from('group_coaches')
+            .delete()
+            .eq('group_id', group.id)
+            .inFilter('user_id', remove.toList());
+      }
+    }, done: 'Coaches saved.');
+  }
+
   Future<void> _archive(Group group) async {
     final yes = await confirm(
       context,
@@ -123,10 +211,17 @@ class _GroupScreenState extends State<GroupScreen> {
               actions: [
                 if (!unassigned && club.canManageGroups)
                   PopupMenuButton<String>(
-                    onSelected: (v) =>
-                        v == 'edit' ? _edit(group!) : _archive(group!),
+                    onSelected: (v) => switch (v) {
+                      'edit' => _edit(group!),
+                      'coaches' => _assignCoaches(group!),
+                      _ => _archive(group!),
+                    },
                     itemBuilder: (_) => const [
                       PopupMenuItem(value: 'edit', child: Text('Edit group')),
+                      PopupMenuItem(
+                        value: 'coaches',
+                        child: Text('Assign coaches'),
+                      ),
                       PopupMenuItem(
                         value: 'archive',
                         child: Text('Archive group'),

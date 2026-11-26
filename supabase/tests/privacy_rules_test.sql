@@ -245,6 +245,12 @@ update public.groups set archived_at = now() where id = tests.v('silver');
 select tests.eq('empty group can be archived', (select count(*) from public.groups where archived_at is not null), 1);
 select tests.fails('groups cannot be deleted', format('delete from public.groups where id = %L', tests.v('silver')));
 -- What the coach screens do:
+insert into public.group_coaches (group_id, club_id, user_id) values (tests.v('silver'), tests.v('clubA'), tests.who('hc1'));
+select tests.eq('head coach assigns a coach to a group', (select count(*) from public.group_coaches where group_id = tests.v('silver')), 1);
+select tests.eq('coaches read invite codes with the swimmer''s name',
+  (select count(*) from public.invite_codes i join public.swimmers s on s.id = i.swimmer_id where i.club_id = tests.v('clubA')), 3);
+delete from public.group_coaches where group_id = tests.v('silver') and user_id = tests.who('hc1');
+select tests.eq('head coach unassigns a coach', (select count(*) from public.group_coaches where group_id = tests.v('silver')), 0);
 update public.groups set archived_at = null where id = tests.v('silver');
 select tests.eq('archived group can be restored', (select count(*) from public.groups where archived_at is not null), 0);
 insert into public.swimmers (club_id, first_name, last_name, birth_date, gender)

@@ -5,6 +5,7 @@ import '../models.dart';
 import '../widgets/common.dart';
 import '../widgets/move_history.dart';
 import 'groups_screen.dart';
+import 'invite_dialog.dart';
 import 'move_sheet.dart';
 import 'swimmer_form.dart';
 
@@ -21,12 +22,126 @@ class SwimmerScreen extends StatefulWidget {
 
 class _SwimmerScreenState extends State<SwimmerScreen> {
   late Future<ClubData> _data = ClubData.load(widget.club.clubId);
+  late Future<List<Map<String, dynamic>>> _parents = _loadParents();
   int _version = 0;
 
   void _refresh() => setState(() {
     _data = ClubData.load(widget.club.clubId);
+    _parents = _loadParents();
     _version++;
   });
+
+  /// The parents linked to this swimmer, with their names.
+  Future<List<Map<String, dynamic>>> _loadParents() async {
+    final links = List<Map<String, dynamic>>.from(
+      await db
+          .from('parent_links')
+          .select('id, parent_user_id')
+          .eq('swimmer_id', widget.swimmerId),
+    );
+    if (links.isEmpty) return links;
+    final people = await db
+        .from('profiles')
+        .select('id, full_name, email')
+        .inFilter('id', [for (final l in links) l['parent_user_id']]);
+    final byId = {for (final p in people) p['id']: p};
+    for (final l in links) {
+      l['profile'] = byId[l['parent_user_id']];
+    }
+    return links;
+  }
+
+  Future<void> _invite(Swimmer s, String role) async {
+    if (await createAndShowInvite(
+      context,
+      clubId: widget.club.clubId,
+      role: role,
+      swimmerId: s.id,
+      forWhom: s.fullName,
+    )) {
+      _refresh();
+    }
+  }
+
+  Future<void> _unlinkParent(Map<String, dynamic> link, String name) async {
+    final yes = await confirm(
+      context,
+      title: 'Unlink $name?',
+      message: '$name will no longer see this swimmer.',
+      yes: 'Unlink',
+    );
+    if (!yes || !mounted) return;
+    final ok = await runAction(
+      context,
+      () => db.from('parent_links').delete().eq('id', link['id']),
+      done: '$name unlinked.',
+    );
+    if (ok) _refresh();
+  }
+
+  List<Widget> _family(Swimmer swimmer) {
+    final club = widget.club;
+    final canInvite = club.isCoach && !club.isPending;
+    return [
+      ListTile(
+        leading: Icon(
+          swimmer.hasLogin
+              ? Icons.verified_user_outlined
+              : Icons.no_accounts_outlined,
+        ),
+        title: Text(swimmer.hasLogin ? 'Has their own login' : 'No login yet'),
+        subtitle: club.isCoach && club.isPending
+            ? const Text(
+                'Invite codes for swimmers and parents open once your '
+                'club is approved.',
+              )
+            : null,
+        trailing: canInvite && !swimmer.hasLogin
+            ? FilledButton.tonal(
+                onPressed: () => _invite(swimmer, 'swimmer'),
+                child: const Text('Make login code'),
+              )
+            : null,
+      ),
+      FutureBuilder<List<Map<String, dynamic>>>(
+        future: _parents,
+        builder: (context, snapshot) {
+          final links = snapshot.data ?? const [];
+          return Column(
+            children: [
+              for (final l in links)
+                ListTile(
+                  leading: const Icon(Icons.family_restroom),
+                  title: Text(
+                    (l['profile']?['full_name'] as String?)?.isNotEmpty == true
+                        ? l['profile']['full_name'] as String
+                        : 'Parent',
+                  ),
+                  subtitle: Text('Parent  ·  ${l['profile']?['email'] ?? ''}'),
+                  trailing: club.isCoach
+                      ? IconButton(
+                          tooltip: 'Unlink parent',
+                          icon: const Icon(Icons.link_off),
+                          onPressed: () => _unlinkParent(
+                            l,
+                            l['profile']?['full_name'] as String? ?? 'Parent',
+                          ),
+                        )
+                      : null,
+                ),
+              if (canInvite)
+                ListTile(
+                  leading: const Icon(Icons.add_link),
+                  title: const Text('Invite a parent'),
+                  subtitle: const Text('Makes a one-time parent code'),
+                  onTap: () => _invite(swimmer, 'parent'),
+                ),
+            ],
+          );
+        },
+      ),
+    ];
+  }
 
   Future<void> _edit(Swimmer s) async {
     final form = await showSwimmerForm(context, swimmer: s);
@@ -125,22 +240,7 @@ class _SwimmerScreenState extends State<SwimmerScreen> {
                   '${swimmer.gender == 'male' ? 'Boy' : 'Girl'}',
                 ),
               ),
-              ListTile(
-                leading: Icon(
-                  swimmer.hasLogin
-                      ? Icons.verified_user_outlined
-                      : Icons.no_accounts_outlined,
-                ),
-                title: Text(
-                  swimmer.hasLogin ? 'Has their own login' : 'No login yet',
-                ),
-                subtitle: swimmer.hasLogin
-                    ? null
-                    : const Text(
-                        'Invite codes for swimmers and parents '
-                        'come in the next update.',
-                      ),
-              ),
+              ..._family(swimmer),
               if (club.canMove)
                 Padding(
                   padding: const EdgeInsets.all(16),
