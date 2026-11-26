@@ -130,3 +130,115 @@ DateTime dateOnly([DateTime? d]) {
   final x = d ?? DateTime.now();
   return DateTime(x.year, x.month, x.day);
 }
+
+// ---------- Attendance ----------
+
+/// The attendance marks, in the order the coach screen shows them, with
+/// the one-letter button and the full name.
+const attendanceStatuses = [
+  'present',
+  'absent',
+  'late',
+  'early_up',
+  'dnf',
+  'excused',
+];
+
+/// "P", "A", "L", "U", "D", "E" for the coach's buttons.
+String attendanceLetter(String status) => switch (status) {
+  'present' => 'P',
+  'absent' => 'A',
+  'late' => 'L',
+  'early_up' => 'U',
+  'dnf' => 'D',
+  'excused' => 'E',
+  _ => '?',
+};
+
+/// "Present", "Early-Up"... for people.
+String attendanceLabel(String status) => switch (status) {
+  'present' => 'Present',
+  'absent' => 'Absent',
+  'late' => 'Late',
+  'early_up' => 'Early-Up',
+  'dnf' => 'Did not finish',
+  'excused' => 'Excused',
+  _ => status,
+};
+
+/// The reasons for an Excused mark.
+const excuseReasons = ['medical', 'school', 'family'];
+
+/// "Medical", "School", "Family".
+String excuseLabel(String reason) => switch (reason) {
+  'medical' => 'Medical',
+  'school' => 'School',
+  'family' => 'Family',
+  _ => reason,
+};
+
+/// Points for one mark: Present 1, Late / Early-Up / DNF half, Absent 0.
+/// Null for Excused, which is left out of the percentage.
+double? attendancePoints(String status) => switch (status) {
+  'present' => 1,
+  'late' || 'early_up' || 'dnf' => 0.5,
+  'absent' => 0,
+  _ => null,
+};
+
+/// Totals for a list of marks.
+class AttendanceSummary {
+  AttendanceSummary(Iterable<String> statuses) {
+    for (final s in statuses) {
+      counts[s] = (counts[s] ?? 0) + 1;
+      final p = attendancePoints(s);
+      if (p != null) {
+        points += p;
+        counted++;
+      }
+    }
+  }
+
+  final Map<String, int> counts = {};
+  double points = 0;
+  int counted = 0; // marks that count (all but Excused)
+
+  int count(String status) => counts[status] ?? 0;
+
+  /// The attendance percentage, rounded, or null when nothing counts yet.
+  int? get percent => counted == 0 ? null : (points * 100 / counted).round();
+}
+
+/// Can a coach mark (or change) a session on [sessionDate] today?
+/// Only on or after the day, and for 7 days after it unless head coach.
+bool canMarkAttendance(
+  DateTime sessionDate, {
+  required bool isHeadCoach,
+  DateTime? today,
+}) {
+  final t = dateOnly(today);
+  final d = dateOnly(sessionDate);
+  if (d.isAfter(t)) return false;
+  return isHeadCoach || !d.isBefore(t.subtract(const Duration(days: 7)));
+}
+
+/// The sessions still waiting for attendance: not cancelled, with
+/// swimmers, nobody marked, and already started (by [now]). Newest first.
+List<SessionOverview> needsAttendance(
+  Iterable<SessionOverview> sessions, {
+  DateTime? now,
+}) {
+  final n = now ?? DateTime.now();
+  final today = dateOnly(n);
+  final minutes = n.hour * 60 + n.minute;
+  final list =
+      sessions.where((s) {
+        if (s.cancelled || s.isMarked || s.swimmers == 0) return false;
+        final d = dateOnly(s.date);
+        return d.isBefore(today) || (d == today && s.start <= minutes);
+      }).toList()..sort((a, b) {
+        final byDate = b.date.compareTo(a.date);
+        return byDate != 0 ? byDate : b.start.compareTo(a.start);
+      });
+  return list;
+}

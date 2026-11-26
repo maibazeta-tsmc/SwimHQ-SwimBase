@@ -2,10 +2,11 @@ import 'package:material_ui/material_ui.dart';
 
 import '../models.dart';
 import '../widgets/common.dart';
+import '../widgets/swimmer_attendance.dart';
 import '../widgets/swimmer_schedule.dart';
 
-/// What a swimmer or parent sees when they open their club. For now it
-/// shows the training schedule; attendance, events and PBs come later.
+/// What a swimmer or parent sees when they open their club: the training
+/// schedule and attendance. Events and PBs come later.
 /// A parent with several children picks a child at the top.
 class FamilyScreen extends StatefulWidget {
   const FamilyScreen({super.key, required this.club});
@@ -106,11 +107,22 @@ class _FamilyScreenState extends State<FamilyScreen> {
                   key: ValueKey('${chosen.id}-$_version'),
                   swimmerId: chosen.id,
                 ),
+                const Divider(height: 32),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+                  child: Text(
+                    '${chosen.firstName}\'s attendance',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                SwimmerAttendance(
+                  key: ValueKey('attendance-${chosen.id}-$_version'),
+                  swimmerId: chosen.id,
+                ),
                 const Padding(
                   padding: EdgeInsets.all(16),
                   child: Text(
-                    'Attendance, events and personal bests are coming in '
-                    'later updates.',
+                    'Events and personal bests are coming in later updates.',
                   ),
                 ),
               ],

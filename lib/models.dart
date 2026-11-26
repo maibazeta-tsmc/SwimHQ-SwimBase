@@ -266,3 +266,142 @@ class ScheduleEntry {
   bool get isRest => status == 'rest';
   bool get isCancelled => status == 'cancelled';
 }
+
+/// One swimmer on a session's attendance list (from session_roster).
+class RosterEntry {
+  RosterEntry({
+    required this.swimmerId,
+    required this.firstName,
+    required this.lastName,
+    this.status,
+    this.excuseReason,
+    this.note,
+    this.markedAt,
+    this.markedBy,
+  });
+
+  factory RosterEntry.fromRow(Map<String, dynamic> row) => RosterEntry(
+    swimmerId: row['swimmer_id'] as String,
+    firstName: row['first_name'] as String? ?? '',
+    lastName: row['last_name'] as String? ?? '',
+    status: row['status'] as String?,
+    excuseReason: row['excuse_reason'] as String?,
+    note: row['note'] as String?,
+    markedAt: row['marked_at'] == null
+        ? null
+        : DateTime.parse(row['marked_at'] as String).toLocal(),
+    markedBy: row['marked_by_name'] as String?,
+  );
+
+  final String swimmerId;
+  final String firstName;
+  final String lastName;
+  final String? status; // null = not marked yet
+  final String? excuseReason;
+  final String? note;
+  final DateTime? markedAt;
+  final String? markedBy;
+
+  String get fullName => '$firstName $lastName';
+}
+
+/// One session in the coach's attendance overview, with how many
+/// swimmers are marked (from club_attendance_overview).
+class SessionOverview {
+  SessionOverview({
+    required this.sessionId,
+    required this.groupId,
+    required this.groupName,
+    required this.groupLevel,
+    required this.date,
+    required this.start,
+    required this.end,
+    required this.marked,
+    required this.swimmers,
+    this.groupColour,
+    this.label,
+    this.venue,
+    this.cancelled = false,
+    this.note,
+    this.lastMarkedAt,
+    this.lastMarkedBy,
+  });
+
+  factory SessionOverview.fromRow(Map<String, dynamic> row) => SessionOverview(
+    sessionId: row['session_id'] as String,
+    groupId: row['group_id'] as String,
+    groupName: row['group_name'] as String? ?? '',
+    groupLevel: (row['group_level'] as num?)?.toInt() ?? 1,
+    groupColour: row['group_colour'] as String?,
+    date: _date(row['session_date'])!,
+    start: _minutes(row['start_time']),
+    end: _minutes(row['end_time']),
+    label: row['label'] as String?,
+    venue: row['venue'] as String?,
+    cancelled: row['status'] == 'cancelled',
+    note: row['cancel_reason'] as String?,
+    marked: (row['marked'] as num?)?.toInt() ?? 0,
+    swimmers: (row['swimmers'] as num?)?.toInt() ?? 0,
+    lastMarkedAt: row['last_marked_at'] == null
+        ? null
+        : DateTime.parse(row['last_marked_at'] as String).toLocal(),
+    lastMarkedBy: row['last_marked_by'] as String?,
+  );
+
+  final String sessionId;
+  final String groupId;
+  final String groupName;
+  final int groupLevel;
+  final String? groupColour;
+  final DateTime date;
+  final int start;
+  final int end;
+  final String? label;
+  final String? venue;
+  final bool cancelled;
+  final String? note; // cancel reason or rest day name
+  final int marked; // swimmers with a mark
+  final int swimmers; // swimmers in the group that day
+  final DateTime? lastMarkedAt;
+  final String? lastMarkedBy;
+
+  bool get isMarked => marked > 0;
+}
+
+/// One of a swimmer's attendance marks (from swimmer_attendance).
+class AttendanceRecord {
+  AttendanceRecord({
+    required this.sessionId,
+    required this.date,
+    required this.start,
+    required this.end,
+    required this.groupName,
+    required this.status,
+    this.label,
+    this.excuseReason,
+    this.note,
+  });
+
+  factory AttendanceRecord.fromRow(Map<String, dynamic> row) =>
+      AttendanceRecord(
+        sessionId: row['session_id'] as String,
+        date: _date(row['session_date'])!,
+        start: _minutes(row['start_time']),
+        end: _minutes(row['end_time']),
+        label: row['label'] as String?,
+        groupName: row['group_name'] as String? ?? '',
+        status: row['status'] as String,
+        excuseReason: row['excuse_reason'] as String?,
+        note: row['note'] as String?,
+      );
+
+  final String sessionId;
+  final DateTime date;
+  final int start;
+  final int end;
+  final String? label;
+  final String groupName;
+  final String status;
+  final String? excuseReason;
+  final String? note; // coaches only
+}
