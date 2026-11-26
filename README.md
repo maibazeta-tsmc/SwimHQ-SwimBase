@@ -47,7 +47,10 @@ You only do this once.
    `20261125000002_privacy_rules.sql`.
 6. Then once more with `20261125000003_club_actions.sql`.
 
-Run the three files **in that order**, each **only once**. If one shows an
+Run the three files **in that order**, each **only once**.
+
+Later updates add more files to `supabase/migrations/` (their names start
+with a date). Run each new one once, in name order, the same way. If one shows an
 error, stop and send the error text in the project chat.
 
 Supabase may show a warning about `family_group_history` being a "security
@@ -118,13 +121,10 @@ club's head coach.
 1. Sign in and tap **Register a club**. The club shows "Waiting for approval".
 2. Until a superadmin approves it, the club can set up groups and invite
    coaches, but cannot invite swimmers or parents.
-3. The approval screen comes in a later phase. For now, approve a club in the
-   Supabase SQL Editor:
-
-   ```sql
-   update public.clubs set status = 'approved', approved_at = now()
-   where name = 'Your Club Name';
-   ```
+3. As the superadmin, you see **Clubs waiting for your approval** at the top
+   of the home screen. Tap **Approve**.
+4. Tap your club to open its **Groups**. Make groups, add swimmers, and move
+   them up or down.
 
 Supabase's free plan only sends a few sign-up emails per hour. If a
 confirmation email doesn't arrive, wait a while, or in Supabase go to
@@ -188,7 +188,7 @@ Android phones can install a test version later without a Google Play account.
 
 ## What's next
 
-Later phases add: the coach screens for groups and moves, the superadmin
-approval screen, swimmer and parent dashboards, training sessions and
+Later phases add: invite codes and coach permissions on screen, group
+schedules, swimmer and parent dashboards, training sessions and
 attendance, events, personal bests from Hy-Tek PDFs, team records, and push
 notifications (with Firebase).

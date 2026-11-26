@@ -236,6 +236,26 @@ select tests.eq('leaving ends parent links', (select count(*) from public.parent
 update public.groups set archived_at = now() where id = tests.v('silver');
 select tests.eq('empty group can be archived', (select count(*) from public.groups where archived_at is not null), 1);
 select tests.fails('groups cannot be deleted', format('delete from public.groups where id = %L', tests.v('silver')));
+-- What the coach screens do:
+update public.groups set archived_at = null where id = tests.v('silver');
+select tests.eq('archived group can be restored', (select count(*) from public.groups where archived_at is not null), 0);
+insert into public.swimmers (club_id, first_name, last_name, birth_date, gender)
+values (tests.v('clubA'), 'Cara', 'Diaz', '2015-02-03', 'female');
+select tests.eq('swimmer can be added with no group (Unassigned)',
+  (select count(*) from public.swimmers where first_name = 'Cara' and current_group_id is null), 1);
+select public.move_swimmers(array[(select id from public.swimmers where first_name = 'Cara')], tests.v('silver'),
+  p_expected_from_group_ids => array[null]::uuid[]);
+select tests.eq('unassigned swimmer put in a group counts as joined',
+  (select count(*) from public.group_moves gm join public.swimmers s on s.id = gm.swimmer_id
+   where s.first_name = 'Cara' and gm.direction = 'joined'), 1);
+reset role;
+
+-- ===== Superadmin approves a pending club from the app =====
+select set_config('request.jwt.claim.sub', tests.who('miguel')::text, false);
+set role authenticated;
+select tests.eq('superadmin sees the pending club', (select count(*) from public.clubs where status = 'pending'), 1);
+select public.approve_club(tests.v('clubB'));
+select tests.eq('club approved', (select count(*) from public.clubs where id = tests.v('clubB') and status = 'approved'), 1);
 reset role;
 
 \echo 'All privacy rule tests passed.'
