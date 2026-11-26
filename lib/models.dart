@@ -405,3 +405,69 @@ class AttendanceRecord {
   final String? excuseReason;
   final String? note; // coaches only
 }
+
+/// An event like a swim meet, for the whole club or some groups. Read from
+/// the events table (coaches) or from swimmer_events (families).
+class ClubEvent {
+  ClubEvent({
+    required this.id,
+    required this.title,
+    required this.kind,
+    required this.startDate,
+    required this.endDate,
+    this.start,
+    this.end,
+    this.venue,
+    this.course,
+    this.notes,
+    this.link,
+    this.updatedAt,
+    this.wholeClub = true,
+    this.groupIds = const [],
+    this.cancelsTraining = false,
+  });
+
+  factory ClubEvent.fromRow(Map<String, dynamic> row) => ClubEvent(
+    id: (row['id'] ?? row['event_id']) as String,
+    title: row['title'] as String? ?? '',
+    kind: row['kind'] as String? ?? 'other',
+    startDate: _date(row['start_date'])!,
+    endDate: _date(row['end_date'])!,
+    start: row['start_time'] == null ? null : _minutes(row['start_time']),
+    end: row['end_time'] == null ? null : _minutes(row['end_time']),
+    venue: row['venue'] as String?,
+    course: row['course'] as String?,
+    notes: row['notes'] as String?,
+    link: row['link'] as String?,
+    updatedAt: row['updated_at'] == null
+        ? null
+        : DateTime.parse(row['updated_at'] as String).toLocal(),
+    wholeClub: row['whole_club'] != false,
+    groupIds: [
+      for (final g in (row['event_groups'] as List?) ?? const [])
+        (g as Map)['group_id'] as String,
+    ],
+    cancelsTraining: ((row['rest_days'] as List?) ?? const []).isNotEmpty,
+  );
+
+  final String id;
+  final String title;
+  final String kind; // meet, social or other
+  final DateTime startDate;
+  final DateTime endDate;
+  final int? start; // minutes after midnight; null = all day
+  final int? end;
+  final String? venue;
+  final String? course; // lcm or scm, meets only
+  final String? notes;
+  final String? link;
+  final DateTime? updatedAt; // null = never edited
+  final bool wholeClub;
+  final List<String> groupIds; // when not for the whole club
+  final bool cancelsTraining;
+
+  bool get allDay => start == null;
+}
+
+/// The columns the coach screens read for events.
+const eventColumns = '*, event_groups(group_id), rest_days(id)';

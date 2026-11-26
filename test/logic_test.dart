@@ -144,4 +144,92 @@ void main() {
     expect(attendanceLabel('early_up'), 'Early-Up');
     expect(excuseReasons.map(excuseLabel), ['Medical', 'School', 'Family']);
   });
+
+  ClubEvent ev(DateTime a, DateTime b, {int? start, int? end, DateTime? up}) =>
+      ClubEvent(
+        id: 'e',
+        title: 'Champs',
+        kind: 'meet',
+        startDate: a,
+        endDate: b,
+        start: start,
+        end: end,
+        updatedAt: up,
+      );
+
+  test('event dates and times are written for people', () {
+    final sat = DateTime(2026, 12, 12);
+    final sun = DateTime(2026, 12, 13);
+    expect(eventWhen(ev(sat, sat)), 'Sat 12 Dec');
+    expect(eventWhen(ev(sat, sun)), 'Sat 12 - Sun 13 Dec');
+    expect(
+      eventWhen(ev(DateTime(2026, 12, 31), DateTime(2027, 1, 1))),
+      'Thu 31 Dec - Fri 1 Jan',
+    );
+    expect(
+      eventWhen(ev(sat, sat, start: 7 * 60, end: 18 * 60)),
+      'Sat 12 Dec, 7:00 AM-6:00 PM',
+    );
+    expect(
+      eventWhen(ev(sat, sun, start: 7 * 60, end: 18 * 60)),
+      'Sat 12 - Sun 13 Dec, from 7:00 AM',
+    );
+  });
+
+  test('an edited event shows as updated for 3 days', () {
+    final now = DateTime(2026, 12, 10, 12);
+    final day = DateTime(2026, 12, 20);
+    expect(recentlyUpdated(ev(day, day), now: now), isFalse);
+    expect(
+      recentlyUpdated(ev(day, day, up: DateTime(2026, 12, 8, 12)), now: now),
+      isTrue,
+    );
+    expect(
+      recentlyUpdated(ev(day, day, up: DateTime(2026, 12, 7, 11)), now: now),
+      isFalse,
+    );
+  });
+
+  test('event labels and map links', () {
+    expect(eventKinds.map(eventKindLabel), ['Meet', 'Social', 'Other']);
+    expect(courseLabel('lcm'), 'LCM (50 m)');
+    expect(
+      mapsLink('Rizal Memorial Pool').toString(),
+      'https://www.google.com/maps/search/?api=1&query=Rizal+Memorial+Pool',
+    );
+  });
+
+  test('events read from the coach table and from swimmer_events', () {
+    final coach = ClubEvent.fromRow({
+      'id': 'e1',
+      'title': 'Party',
+      'kind': 'social',
+      'start_date': '2026-12-20',
+      'end_date': '2026-12-20',
+      'start_time': '18:00:00',
+      'end_time': '21:00:00',
+      'whole_club': false,
+      'event_groups': [
+        {'group_id': 'g1'},
+      ],
+      'rest_days': [
+        {'id': 'r1'},
+      ],
+    });
+    expect(coach.start, 18 * 60);
+    expect(coach.wholeClub, isFalse);
+    expect(coach.groupIds, ['g1']);
+    expect(coach.cancelsTraining, isTrue);
+    final family = ClubEvent.fromRow({
+      'event_id': 'e2',
+      'title': 'Champs',
+      'kind': 'meet',
+      'start_date': '2026-12-12',
+      'end_date': '2026-12-13',
+      'course': 'lcm',
+    });
+    expect(family.id, 'e2');
+    expect(family.allDay, isTrue);
+    expect(family.cancelsTraining, isFalse);
+  });
 }
