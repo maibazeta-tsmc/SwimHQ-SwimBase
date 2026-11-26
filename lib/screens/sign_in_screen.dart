@@ -2,11 +2,15 @@ import 'package:material_ui/material_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config.dart';
+import 'password_screens.dart';
 
 /// Email and password sign-in, with a switch to create an account.
 /// Google and Apple sign-in come in a later phase.
 class SignInScreen extends StatefulWidget {
-  const SignInScreen({super.key});
+  const SignInScreen({super.key, this.initialMessage});
+
+  /// A note to show under the buttons, such as "that reset link expired".
+  final String? initialMessage;
 
   @override
   State<SignInScreen> createState() => _SignInScreenState();
@@ -18,7 +22,7 @@ class _SignInScreenState extends State<SignInScreen> {
   final _password = TextEditingController();
   bool _creating = false;
   bool _busy = false;
-  String? _message;
+  late String? _message = widget.initialMessage;
 
   @override
   void dispose() {
@@ -44,7 +48,8 @@ class _SignInScreenState extends State<SignInScreen> {
           emailRedirectTo: Uri.base.removeFragment().toString(),
         );
         if (result.session == null) {
-          _message = 'Check your email and tap the link to confirm your '
+          _message =
+              'Check your email and tap the link to confirm your '
               'account, then sign in.';
         }
       } else {
@@ -75,9 +80,11 @@ class _SignInScreenState extends State<SignInScreen> {
                 children: [
                   const Icon(Icons.pool, size: 56),
                   const SizedBox(height: 8),
-                  Text('SwimBase',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium),
+                  Text(
+                    'SwimBase',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium,
+                  ),
                   const SizedBox(height: 24),
                   if (_creating) ...[
                     TextField(
@@ -101,7 +108,23 @@ class _SignInScreenState extends State<SignInScreen> {
                     autofillHints: const [AutofillHints.password],
                     onSubmitted: (_) => _busy ? null : _submit(),
                   ),
-                  const SizedBox(height: 20),
+                  if (!_creating)
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton(
+                        onPressed: _busy
+                            ? null
+                            : () => Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ForgotPasswordScreen(
+                                    email: _email.text.trim(),
+                                  ),
+                                ),
+                              ),
+                        child: const Text('Forgot password?'),
+                      ),
+                    ),
+                  SizedBox(height: _creating ? 20 : 8),
                   FilledButton(
                     onPressed: _busy ? null : _submit,
                     child: Text(_creating ? 'Create account' : 'Sign in'),
@@ -110,12 +133,14 @@ class _SignInScreenState extends State<SignInScreen> {
                     onPressed: _busy
                         ? null
                         : () => setState(() {
-                              _creating = !_creating;
-                              _message = null;
-                            }),
-                    child: Text(_creating
-                        ? 'I already have an account'
-                        : 'New here? Create an account'),
+                            _creating = !_creating;
+                            _message = null;
+                          }),
+                    child: Text(
+                      _creating
+                          ? 'I already have an account'
+                          : 'New here? Create an account',
+                    ),
                   ),
                   if (_message != null) ...[
                     const SizedBox(height: 12),
@@ -128,7 +153,8 @@ class _SignInScreenState extends State<SignInScreen> {
                     'Server: ${Uri.tryParse(AppConfig.supabaseUrl)?.host ?? AppConfig.supabaseUrl}',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.outline),
+                      color: Theme.of(context).colorScheme.outline,
+                    ),
                   ),
                 ],
               ),
