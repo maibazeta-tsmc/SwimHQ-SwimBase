@@ -287,11 +287,27 @@ class _HomeScreenState extends State<HomeScreen> {
               icon: const Icon(Icons.vpn_key),
               label: const Text('Enter an invite code'),
             ),
-            const SizedBox(height: 8),
-            OutlinedButton.icon(
-              onPressed: _registerClub,
-              icon: const Icon(Icons.add_business),
-              label: const Text('Register a club (head coaches)'),
+            // Only coaches, and brand-new accounts not in any club yet, see
+            // "Register a club". Swimmers and parents don't need it.
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _clubs,
+              builder: (context, snapshot) {
+                final rows = snapshot.data;
+                final show = rows != null &&
+                    (rows.isEmpty ||
+                        rows.any((r) =>
+                            r['role'] == 'head_coach' ||
+                            r['role'] == 'assistant_coach'));
+                if (!show) return const SizedBox.shrink();
+                return Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: OutlinedButton.icon(
+                    onPressed: _registerClub,
+                    icon: const Icon(Icons.add_business),
+                    label: const Text('Register a club (head coaches)'),
+                  ),
+                );
+              },
             ),
           ],
         ),
