@@ -20,7 +20,7 @@ iPhone apps later.
 | --- | --- |
 | `lib/` | The app itself (written in Flutter). `lib/screens/` has one file per screen. |
 | `web/`, `android/`, `ios/` | Files Flutter needs for the website, Android and iPhone versions. You rarely touch these. |
-| `supabase/migrations/` | The database, in three files. You copy these into Supabase once (step 1). |
+| `supabase/migrations/` | The database, one file per change. You copy each into Supabase once, in order (step 1). |
 | `supabase/tests/` | Automatic checks that prove the privacy rules work. |
 | `.github/workflows/` | Instructions for GitHub to check the code and publish the website for you. |
 | `env.example.json` | A template for your Supabase settings, used only if you run the app on your own computer. |
@@ -46,8 +46,10 @@ You only do this once.
 5. Click **New query** again and do the same with
    `20261125000002_privacy_rules.sql`.
 6. Then once more with `20261125000003_club_actions.sql`.
+7. And finally `20261126000004_table_access.sql`.
 
-Run the three files **in that order**, each **only once**. If one shows an
+Run the files **in that order**, each **only once**. When a later update adds
+a new file to `supabase/migrations/`, run just that new file the same way. If one shows an
 error, stop and send the error text in the project chat.
 
 Supabase may show a warning about `family_group_history` being a "security
