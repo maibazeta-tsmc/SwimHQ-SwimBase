@@ -107,18 +107,21 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 SwimmerEvents(
                   key: ValueKey('events-${chosen.id}-$_version'),
                   swimmerId: chosen.id,
+                  limit: 3,
                 ),
                 const Divider(height: 32),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                   child: Text(
-                    '${chosen.firstName}\'s training, next 2 weeks',
+                    '${chosen.firstName}\'s next training',
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ),
                 SwimmerSchedule(
                   key: ValueKey('${chosen.id}-$_version'),
                   swimmerId: chosen.id,
+                  limit: 4,
+                  title: '${chosen.firstName}\'s training, next 2 weeks',
                 ),
                 const Divider(height: 32),
                 Padding(

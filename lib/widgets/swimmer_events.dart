@@ -23,27 +23,23 @@ class EventTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final e = event;
     final scheme = Theme.of(context).colorScheme;
-    final tags = [
-      eventKindLabel(e.kind),
+    // One short line: when, where, course, and "Updated" after a change.
+    final line = [
+      eventWhen(e),
+      if (e.venue != null) e.venue!,
       if (e.course != null) e.course!.toUpperCase(),
       if (recentlyUpdated(e)) 'Updated',
-    ];
+    ].join('  ·  ');
     return ListTile(
+      visualDensity: VisualDensity.compact,
       leading: Icon(switch (e.kind) {
         'meet' => Icons.emoji_events,
         'social' => Icons.celebration,
         _ => Icons.event,
       }, color: scheme.primary),
       title: Text(e.title),
-      subtitle: Text(
-        [
-          eventWhen(e),
-          if (e.venue != null) e.venue!,
-          tags.join('  ·  '),
-          ?extra,
-        ].join('\n'),
-      ),
-      isThreeLine: true,
+      subtitle: Text(extra == null ? line : '$line\n$extra'),
+      isThreeLine: extra != null,
       trailing: const Icon(Icons.chevron_right),
       onTap: onTap,
     );
@@ -125,10 +121,12 @@ Future<void> showEventDetails(BuildContext context, ClubEvent e) {
 }
 
 /// One swimmer's upcoming events (the next 6 months): whole-club events
-/// and events for the swimmer's group.
+/// and events for the swimmer's group. With [limit], shows only the first
+/// few and a "See all" button.
 class SwimmerEvents extends StatefulWidget {
-  const SwimmerEvents({super.key, required this.swimmerId});
+  const SwimmerEvents({super.key, required this.swimmerId, this.limit});
   final String swimmerId;
+  final int? limit;
 
   @override
   State<SwimmerEvents> createState() => _SwimmerEventsState();
@@ -174,10 +172,19 @@ class _SwimmerEventsState extends State<SwimmerEvents> {
             child: Text('No upcoming events yet.'),
           );
         }
+        final limit = widget.limit;
+        final shown = limit == null ? events : events.take(limit);
         return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            for (final e in events)
+            for (final e in shown)
               EventTile(event: e, onTap: () => showEventDetails(context, e)),
+            if (limit != null && events.length > limit)
+              SeeAllButton(
+                count: events.length,
+                title: 'Upcoming events',
+                page: SwimmerEvents(swimmerId: widget.swimmerId),
+              ),
           ],
         );
       },
