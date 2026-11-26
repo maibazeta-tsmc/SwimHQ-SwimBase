@@ -4,6 +4,7 @@ import '../logic.dart';
 import '../models.dart';
 import '../widgets/common.dart';
 import '../widgets/move_history.dart';
+import '../widgets/swimmer_attendance.dart';
 import '../widgets/swimmer_schedule.dart';
 import 'groups_screen.dart';
 import 'invite_dialog.dart';
@@ -272,6 +273,18 @@ class _SwimmerScreenState extends State<SwimmerScreen> {
               ),
               SwimmerSchedule(
                 key: ValueKey('schedule-$_version'),
+                swimmerId: swimmer.id,
+              ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  'Attendance',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              SwimmerAttendance(
+                key: ValueKey('attendance-$_version'),
                 swimmerId: swimmer.id,
               ),
               const Divider(),

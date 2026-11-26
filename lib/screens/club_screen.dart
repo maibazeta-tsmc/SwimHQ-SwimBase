@@ -3,9 +3,10 @@ import 'package:material_ui/material_ui.dart';
 import '../models.dart';
 import 'club_tab.dart';
 import 'groups_screen.dart';
+import 'today_tab.dart';
 
-/// A coach's view of one club, with Groups and Club tabs at the bottom.
-/// Today, Calendar and Times are added in later updates.
+/// A coach's view of one club, with Today, Groups and Club tabs at the
+/// bottom. Calendar and Times are added in later updates.
 class ClubScreen extends StatefulWidget {
   const ClubScreen({super.key, required this.club});
   final Membership club;
@@ -25,6 +26,7 @@ class _ClubScreenState extends State<ClubScreen> {
       body: IndexedStack(
         index: _tab,
         children: [
+          TodayTab(club: club),
           GroupsScreen(club: club),
           ClubTab(
             club: club,
@@ -38,6 +40,7 @@ class _ClubScreenState extends State<ClubScreen> {
         selectedIndex: _tab,
         onDestinationSelected: (i) => setState(() => _tab = i),
         destinations: const [
+          NavigationDestination(icon: Icon(Icons.today), label: 'Today'),
           NavigationDestination(icon: Icon(Icons.groups), label: 'Groups'),
           NavigationDestination(icon: Icon(Icons.badge), label: 'Club'),
         ],
