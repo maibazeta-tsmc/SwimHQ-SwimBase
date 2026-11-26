@@ -242,3 +242,53 @@ List<SessionOverview> needsAttendance(
       });
   return list;
 }
+
+// ---------- Events ----------
+
+/// The event types, in the order the form shows them.
+const eventKinds = ['meet', 'social', 'other'];
+
+/// "Meet", "Social", "Other".
+String eventKindLabel(String kind) => switch (kind) {
+  'meet' => 'Meet',
+  'social' => 'Social',
+  'other' => 'Other',
+  _ => kind,
+};
+
+/// "LCM (50 m)" or "SCM (25 m)".
+String courseLabel(String course) => switch (course) {
+  'lcm' => 'LCM (50 m)',
+  'scm' => 'SCM (25 m)',
+  _ => course,
+};
+
+/// When an event is, for people: "Sat 13 Dec", "Sat 13 - Sun 14 Dec",
+/// "Sat 13 Dec, 7:00 AM-6:00 PM" or across months "Wed 31 Dec - Thu 1 Jan".
+String eventWhen(ClubEvent e) {
+  final a = e.startDate;
+  final b = e.endDate;
+  String days;
+  if (a == b) {
+    days = formatDayShort(a);
+  } else if (a.month == b.month && a.year == b.year) {
+    days = '${weekdayShort(a.weekday)} ${a.day} - ${formatDayShort(b)}';
+  } else {
+    days = '${formatDayShort(a)} - ${formatDayShort(b)}';
+  }
+  if (e.allDay) return days;
+  if (a == b) return '$days, ${timeRange(e.start!, e.end!)}';
+  return '$days, from ${formatTime(e.start!)}';
+}
+
+/// True when the event was changed in the last 3 days, so families see
+/// an "Updated" tag on it.
+bool recentlyUpdated(ClubEvent e, {DateTime? now}) {
+  final u = e.updatedAt;
+  if (u == null) return false;
+  return (now ?? DateTime.now()).difference(u) < const Duration(days: 3);
+}
+
+/// A Google Maps search link for a place, so families can get directions.
+Uri mapsLink(String place) =>
+    Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': place});
