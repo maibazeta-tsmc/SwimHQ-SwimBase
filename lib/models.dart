@@ -107,3 +107,162 @@ class Swimmer {
 /// The columns the screens read from the swimmers table.
 const swimmerColumns =
     'id, first_name, last_name, birth_date, gender, current_group_id, user_id';
+
+DateTime? _date(Object? value) =>
+    value == null ? null : DateTime.parse(value as String);
+
+int _minutes(Object? value) {
+  final parts = (value as String).split(':');
+  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+}
+
+/// One line of a group's weekly pattern, e.g. "Tue 6:00-7:00 AM".
+class WeeklySession {
+  WeeklySession({
+    required this.id,
+    required this.weekday,
+    required this.start,
+    required this.end,
+    required this.startsOn,
+    this.endsOn,
+    this.label,
+    this.venue,
+  });
+
+  factory WeeklySession.fromRow(Map<String, dynamic> row) => WeeklySession(
+    id: row['id'] as String,
+    weekday: (row['weekday'] as num).toInt(),
+    start: _minutes(row['start_time']),
+    end: _minutes(row['end_time']),
+    startsOn: _date(row['starts_on'])!,
+    endsOn: _date(row['ends_on']),
+    label: row['label'] as String?,
+    venue: row['venue'] as String?,
+  );
+
+  final String id;
+  final int weekday; // 1 = Monday ... 7 = Sunday
+  final int start; // minutes after midnight
+  final int end;
+  final DateTime startsOn;
+  final DateTime? endsOn;
+  final String? label;
+  final String? venue;
+}
+
+/// One real training session on one date.
+class TrainingSession {
+  TrainingSession({
+    required this.id,
+    required this.groupId,
+    required this.date,
+    required this.start,
+    required this.end,
+    this.label,
+    this.venue,
+    this.cancelled = false,
+    this.cancelReason,
+    this.restDayId,
+    this.oneOff = false,
+  });
+
+  factory TrainingSession.fromRow(Map<String, dynamic> row) => TrainingSession(
+    id: row['id'] as String,
+    groupId: row['group_id'] as String,
+    date: _date(row['session_date'])!,
+    start: _minutes(row['start_time']),
+    end: _minutes(row['end_time']),
+    label: row['label'] as String?,
+    venue: row['venue'] as String?,
+    cancelled: row['status'] == 'cancelled',
+    cancelReason: row['cancel_reason'] as String?,
+    restDayId: row['rest_day_id'] as String?,
+    oneOff: row['weekly_session_id'] == null,
+  );
+
+  final String id;
+  final String groupId;
+  final DateTime date;
+  final int start;
+  final int end;
+  final String? label;
+  final String? venue;
+  final bool cancelled;
+  final String? cancelReason;
+  final String? restDayId;
+  final bool oneOff;
+}
+
+/// A rest day or break, for one group or (groupId null) the whole club.
+class RestDay {
+  RestDay({
+    required this.id,
+    required this.startDate,
+    required this.endDate,
+    required this.isBreak,
+    this.groupId,
+    this.title,
+  });
+
+  factory RestDay.fromRow(Map<String, dynamic> row) => RestDay(
+    id: row['id'] as String,
+    groupId: row['group_id'] as String?,
+    startDate: _date(row['start_date'])!,
+    endDate: _date(row['end_date'])!,
+    isBreak: row['kind'] == 'break',
+    title: row['title'] as String?,
+  );
+
+  final String id;
+  final String? groupId;
+  final DateTime startDate;
+  final DateTime endDate;
+  final bool isBreak;
+  final String? title;
+
+  String get name =>
+      title?.isNotEmpty == true ? title! : (isBreak ? 'Break' : 'Rest day');
+}
+
+/// One line of a swimmer's own calendar (from swimmer_schedule).
+class ScheduleEntry {
+  ScheduleEntry({
+    required this.date,
+    required this.groupId,
+    required this.groupName,
+    required this.status,
+    this.sessionId,
+    this.start,
+    this.end,
+    this.label,
+    this.venue,
+    this.note,
+  });
+
+  factory ScheduleEntry.fromRow(Map<String, dynamic> row) => ScheduleEntry(
+    date: _date(row['session_date'])!,
+    groupId: row['group_id'] as String,
+    groupName: row['group_name'] as String? ?? '',
+    status: row['status'] as String? ?? 'scheduled',
+    sessionId: row['session_id'] as String?,
+    start: row['start_time'] == null ? null : _minutes(row['start_time']),
+    end: row['end_time'] == null ? null : _minutes(row['end_time']),
+    label: row['label'] as String?,
+    venue: row['venue'] as String?,
+    note: row['note'] as String?,
+  );
+
+  final DateTime date;
+  final String groupId;
+  final String groupName;
+  final String status; // scheduled, cancelled or rest
+  final String? sessionId;
+  final int? start;
+  final int? end;
+  final String? label;
+  final String? venue;
+  final String? note;
+
+  bool get isRest => status == 'rest';
+  bool get isCancelled => status == 'cancelled';
+}

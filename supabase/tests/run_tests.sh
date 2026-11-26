@@ -12,4 +12,5 @@ for f in supabase/migrations/*.sql; do
   $PSQL -d "$DB" -f "$f"
 done
 $PSQL -d "$DB" -o /dev/null -f supabase/tests/privacy_rules_test.sql
+$PSQL -d "$DB" -o /dev/null -f supabase/tests/schedule_test.sql
 dropdb "$DB"

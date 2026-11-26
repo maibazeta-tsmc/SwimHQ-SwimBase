@@ -7,10 +7,11 @@ import '../widgets/move_history.dart';
 import 'group_form.dart';
 import 'groups_screen.dart';
 import 'move_sheet.dart';
+import 'schedule_tab.dart';
 import 'swimmer_screen.dart';
 
-/// One group's page: its swimmers (with Select to move several at once)
-/// and its history. [groupId] null means the Unassigned list.
+/// One group's page: its swimmers (with Select to move several at once),
+/// its training schedule and its history. [groupId] null means the Unassigned list.
 class GroupScreen extends StatefulWidget {
   const GroupScreen({super.key, required this.club, required this.groupId});
   final Membership club;
@@ -204,7 +205,7 @@ class _GroupScreenState extends State<GroupScreen> {
 
         final swimmerList = _swimmerList(data, group, swimmers);
         return DefaultTabController(
-          length: unassigned ? 1 : 2,
+          length: unassigned ? 1 : 3,
           child: Scaffold(
             appBar: AppBar(
               title: Text(title),
@@ -240,6 +241,7 @@ class _GroupScreenState extends State<GroupScreen> {
                   : const TabBar(
                       tabs: [
                         Tab(text: 'Swimmers'),
+                        Tab(text: 'Schedule'),
                         Tab(text: 'History'),
                       ],
                     ),
@@ -270,12 +272,17 @@ class _GroupScreenState extends State<GroupScreen> {
                 : TabBarView(
                     children: [
                       swimmerList,
+                      ScheduleTab(
+                        club: club,
+                        group: group!,
+                        allGroups: data.activeGroups,
+                      ),
                       ListView(
                         children: [
                           MoveHistory(
                             key: ValueKey(_historyVersion),
                             groups: data.groups,
-                            groupId: group!.id,
+                            groupId: group.id,
                             canCancel: club.canMove,
                             onChanged: _refresh,
                           ),

@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../models.dart';
 import 'club_screen.dart';
+import 'family_screen.dart';
 
 /// A simple first home screen: shows your clubs and lets you register a
 /// club or enter an invite code. The real dashboards come in later phases.
@@ -100,19 +101,12 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _openClub(Membership club) {
-    if (!club.isCoach) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Swimmer and parent screens are coming in a later '
-            'update.',
-          ),
-        ),
-      );
-      return;
-    }
-    Navigator.of(context)
-        .push(MaterialPageRoute(builder: (_) => ClubScreen(club: club)));
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            club.isCoach ? ClubScreen(club: club) : FamilyScreen(club: club),
+      ),
+    );
   }
 
   Future<String?> _ask(String title, String label) {

@@ -4,6 +4,7 @@ import '../logic.dart';
 import '../models.dart';
 import '../widgets/common.dart';
 import '../widgets/move_history.dart';
+import '../widgets/swimmer_schedule.dart';
 import 'groups_screen.dart';
 import 'invite_dialog.dart';
 import 'move_sheet.dart';
@@ -261,6 +262,18 @@ class _SwimmerScreenState extends State<SwimmerScreen> {
                     label: Text(group == null ? 'Put in a group' : 'Move'),
                   ),
                 ),
+              const Divider(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  'Training, next 2 weeks',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              SwimmerSchedule(
+                key: ValueKey('schedule-$_version'),
+                swimmerId: swimmer.id,
+              ),
               const Divider(),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),

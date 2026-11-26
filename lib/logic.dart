@@ -75,3 +75,58 @@ String directionLabel(String direction) => switch (direction) {
   'left_club' => 'Left the club',
   _ => direction,
 };
+
+// ---------- Training schedules ----------
+
+/// Day names, Monday first (the database uses 1 = Monday ... 7 = Sunday).
+const weekdayNames = [
+  'Monday',
+  'Tuesday',
+  'Wednesday',
+  'Thursday',
+  'Friday',
+  'Saturday',
+  'Sunday',
+];
+
+/// "Mon", "Tue"... for weekday 1 to 7.
+String weekdayShort(int weekday) => weekdayNames[weekday - 1].substring(0, 3);
+
+/// A database time like "16:30:00" as minutes after midnight (990).
+int parseDbTime(String text) {
+  final parts = text.split(':');
+  return int.parse(parts[0]) * 60 + int.parse(parts[1]);
+}
+
+/// Minutes after midnight the way the database wants them: "16:30".
+String dbTime(int minutes) =>
+    '${(minutes ~/ 60).toString().padLeft(2, '0')}:'
+    '${(minutes % 60).toString().padLeft(2, '0')}';
+
+/// Minutes after midnight for people: "4:30 PM".
+String formatTime(int minutes) {
+  final h = minutes ~/ 60;
+  final m = (minutes % 60).toString().padLeft(2, '0');
+  final h12 = h % 12 == 0 ? 12 : h % 12;
+  return '$h12:$m ${h < 12 ? 'AM' : 'PM'}';
+}
+
+/// "4:30-7:00 PM", or "11:00 AM-1:00 PM" when it crosses noon.
+String timeRange(int start, int end) {
+  final a = formatTime(start);
+  final b = formatTime(end);
+  if (a.substring(a.length - 2) == b.substring(b.length - 2)) {
+    return '${a.substring(0, a.length - 3)}-$b';
+  }
+  return '$a-$b';
+}
+
+/// A date written like "Thu 27 Nov".
+String formatDayShort(DateTime d) =>
+    '${weekdayShort(d.weekday)} ${d.day} ${_months[d.month - 1]}';
+
+/// Today's date with no time of day.
+DateTime dateOnly([DateTime? d]) {
+  final x = d ?? DateTime.now();
+  return DateTime(x.year, x.month, x.day);
+}
