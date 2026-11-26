@@ -101,7 +101,7 @@ void main() {
       ),
     );
     expect(
-      find.text('Sat 12 Dec\nCity Aquatic Centre\nMeet  ·  SCM'),
+      find.text('Sat 12 Dec  ·  City Aquatic Centre  ·  SCM'),
       findsOneWidget,
     );
   });

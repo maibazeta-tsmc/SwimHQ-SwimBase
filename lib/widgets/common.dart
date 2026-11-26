@@ -135,3 +135,35 @@ class LoadState extends StatelessWidget {
     );
   }
 }
+
+/// A "See all (12)" button under a short list. Opens [page] full screen
+/// with [title] at the top.
+class SeeAllButton extends StatelessWidget {
+  const SeeAllButton({
+    super.key,
+    required this.count,
+    required this.title,
+    required this.page,
+  });
+  final int count;
+  final String title;
+  final Widget page;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: TextButton(
+        onPressed: () => Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => Scaffold(
+              appBar: AppBar(title: Text(title)),
+              body: ListView(children: [page]),
+            ),
+          ),
+        ),
+        child: Text('See all ($count)'),
+      ),
+    );
+  }
+}
