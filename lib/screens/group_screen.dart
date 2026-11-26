@@ -210,6 +210,12 @@ class _GroupScreenState extends State<GroupScreen> {
               title: Text(title),
               actions: [
                 if (!unassigned && club.canManageGroups)
+                  IconButton(
+                    tooltip: 'Edit group',
+                    icon: const Icon(Icons.edit),
+                    onPressed: () => _edit(group!),
+                  ),
+                if (!unassigned && club.canManageGroups)
                   PopupMenuButton<String>(
                     onSelected: (v) => switch (v) {
                       'edit' => _edit(group!),

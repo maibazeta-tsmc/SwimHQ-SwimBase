@@ -117,6 +117,17 @@ class _GroupsScreenState extends State<GroupsScreen> {
     _refresh();
   }
 
+  Future<void> _editGroup(Group g) async {
+    final form = await showGroupForm(context, group: g);
+    if (form == null || !mounted) return;
+    final ok = await runAction(
+      context,
+      () => db.from('groups').update(form.toRow()).eq('id', g.id),
+      done: 'Group saved.',
+    );
+    if (ok) _refresh();
+  }
+
   Future<void> _restore(Group g) async {
     final ok = await runAction(
       context,
@@ -213,7 +224,14 @@ class _GroupsScreenState extends State<GroupsScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(count(data.inGroup(g.id).length)),
-                const Icon(Icons.chevron_right),
+                if (club.canManageGroups)
+                  IconButton(
+                    tooltip: 'Edit group',
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _editGroup(g),
+                  )
+                else
+                  const Icon(Icons.chevron_right),
               ],
             ),
             onTap: () => _openGroup(data, g),
