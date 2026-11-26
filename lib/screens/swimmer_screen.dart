@@ -237,7 +237,7 @@ class _SwimmerScreenState extends State<SwimmerScreen> {
                 title: Text('Age ${ageOn(swimmer.birthDate)}'),
                 subtitle: Text(
                   'Born ${formatDate(swimmer.birthDate)}  ·  '
-                  '${swimmer.gender == 'male' ? 'Boy' : 'Girl'}',
+                  '${swimmer.gender == 'male' ? 'Male' : 'Female'}',
                 ),
               ),
               ..._family(swimmer),
