@@ -1,6 +1,8 @@
 import 'package:material_ui/material_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../config.dart';
+
 /// Email and password sign-in, with a switch to create an account.
 /// Google and Apple sign-in come in a later phase.
 class SignInScreen extends StatefulWidget {
@@ -119,6 +121,15 @@ class _SignInScreenState extends State<SignInScreen> {
                     const SizedBox(height: 12),
                     Text(_message!, textAlign: TextAlign.center),
                   ],
+                  const SizedBox(height: 32),
+                  // Shows which Supabase project this build talks to, to
+                  // help spot a wrong address. The address is not secret.
+                  Text(
+                    'Server: ${Uri.tryParse(AppConfig.supabaseUrl)?.host ?? AppConfig.supabaseUrl}',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: Theme.of(context).colorScheme.outline),
+                  ),
                 ],
               ),
             ),

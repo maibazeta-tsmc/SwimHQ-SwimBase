@@ -231,9 +231,13 @@ class _HomeScreenState extends State<HomeScreen> {
               future: _clubs,
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
-                  return const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text('Could not load your clubs. Pull to retry.'),
+                  final error = snapshot.error;
+                  final detail =
+                      error is PostgrestException ? error.message : '$error';
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text('Could not load your clubs. Pull to retry.\n'
+                        'Details: $detail'),
                   );
                 }
                 if (!snapshot.hasData) {

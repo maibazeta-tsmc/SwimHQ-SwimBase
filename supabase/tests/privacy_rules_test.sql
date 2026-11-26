@@ -72,6 +72,14 @@ values (tests.v('clubA'), 'Ana', 'Reyes', '2013-05-02', 'female', tests.v('bronz
 select tests.set_v('ana', (select id from public.swimmers where first_name = 'Ana'));
 select tests.set_v('ben', (select id from public.swimmers where first_name = 'Ben'));
 select tests.eq('adding a swimmer logs a "joined" entry', (select count(*) from public.group_moves where direction = 'joined'), 2);
+select tests.fails('cannot register a second club while one is pending', 'select public.register_club(''Another Club'')');
+reset role;
+select set_config('request.jwt.claim.sub', tests.who('stranger')::text, false);
+set role authenticated;
+select tests.fails('cannot register a club with the same name', 'select public.register_club(''  manila   MARLINS '')');
+reset role;
+select set_config('request.jwt.claim.sub', tests.who('hc1')::text, false);
+set role authenticated;
 select tests.fails('pending club cannot invite swimmers',
   format('select public.create_invite_code(%L, ''swimmer'', %L)', tests.v('clubA'), tests.v('ana')));
 select tests.fails('head coach cannot approve own club', format('select public.approve_club(%L)', tests.v('clubA')));
