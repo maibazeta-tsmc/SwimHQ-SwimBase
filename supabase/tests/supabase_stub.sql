@@ -19,8 +19,8 @@ $$;
 grant usage on schema auth to anon, authenticated, service_role;
 grant execute on function auth.uid() to anon, authenticated;
 
--- Supabase gives these roles table access by default and relies on RLS.
+-- Newer Supabase projects do NOT open new tables to these roles by default,
+-- so the stub doesn't either: the migrations must grant what the app needs.
 grant usage on schema public to anon, authenticated, service_role;
-alter default privileges in schema public grant all on tables to anon, authenticated, service_role;
 alter default privileges in schema public grant all on functions to anon, authenticated, service_role;
 alter default privileges in schema public grant all on sequences to anon, authenticated, service_role;
