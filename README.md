@@ -48,7 +48,8 @@ You only do this once.
 6. Then once more with `20261125000003_club_actions.sql`.
 7. Then `20261126000004_table_access.sql`.
 8. Then `20261126000005_no_duplicate_clubs.sql`.
-9. And finally `20261126000006_daily_moves.sql`.
+9. Then `20261126000006_daily_moves.sql`.
+10. And finally `20261126000007_training_schedules.sql`.
 
 Run the files **in that order**, each **only once**. When a later update adds
 a new file to `supabase/migrations/`, run just that new file the same way. If one shows an

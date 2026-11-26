@@ -54,4 +54,19 @@ void main() {
     expect(groupsOneDown(groups[1], groups).map((x) => x.name), ['Bronze']);
     expect(groupsOneDown(groups[0], groups), isEmpty);
   });
+
+  test('session times are shown the way coaches write them', () {
+    expect(parseDbTime('16:30:00'), 990);
+    expect(dbTime(390), '06:30');
+    expect(formatTime(0), '12:00 AM');
+    expect(formatTime(12 * 60 + 5), '12:05 PM');
+    expect(timeRange(16 * 60 + 30, 19 * 60), '4:30-7:00 PM');
+    expect(timeRange(11 * 60, 13 * 60), '11:00 AM-1:00 PM');
+  });
+
+  test('days are written short, Monday first', () {
+    expect(weekdayShort(1), 'Mon');
+    expect(weekdayShort(7), 'Sun');
+    expect(formatDayShort(DateTime(2026, 11, 27)), 'Fri 27 Nov');
+  });
 }
