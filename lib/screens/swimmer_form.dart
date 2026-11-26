@@ -96,7 +96,7 @@ class _SwimmerFormState extends State<_SwimmerForm> {
     } else if (_birth == null) {
       problem = 'Choose the date of birth.';
     } else if (_gender == null) {
-      problem = 'Choose boy or girl (used for Team Records).';
+      problem = 'Choose male or female (used for Team Records).';
     }
     if (problem != null) {
       setState(() => _error = problem);
@@ -143,8 +143,8 @@ class _SwimmerFormState extends State<_SwimmerForm> {
             SegmentedButton<String>(
               emptySelectionAllowed: true,
               segments: const [
-                ButtonSegment(value: 'male', label: Text('Boy')),
-                ButtonSegment(value: 'female', label: Text('Girl')),
+                ButtonSegment(value: 'male', label: Text('Male')),
+                ButtonSegment(value: 'female', label: Text('Female')),
               ],
               selected: {?_gender},
               onSelectionChanged: (s) =>
