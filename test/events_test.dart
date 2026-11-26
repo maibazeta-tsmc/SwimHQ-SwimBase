@@ -36,10 +36,10 @@ void main() {
     );
     expect(find.text('New event'), findsOneWidget);
     // Meets have a pool course; socials don't.
-    expect(find.text('LCM (50 m)'), findsOneWidget);
+    expect(find.text('LCM 50 m'), findsOneWidget);
     await tester.tap(find.text('Social'));
     await tester.pump();
-    expect(find.text('LCM (50 m)'), findsNothing);
+    expect(find.text('LCM 50 m'), findsNothing);
 
     await tester.tap(find.text('Save'));
     await tester.pump();
