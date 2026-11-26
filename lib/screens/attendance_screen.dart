@@ -12,7 +12,7 @@ class _Mark {
   String? note; // coaches only
 }
 
-/// Take attendance for one session. Everyone starts as Present, so the
+/// Take attendance for one session. Everyone starts as Absent, so the
 /// coach only taps the exceptions and then Save.
 class AttendanceScreen extends StatefulWidget {
   const AttendanceScreen({
@@ -43,7 +43,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       ..clear()
       ..addAll({
         for (final e in roster)
-          e.swimmerId: _Mark(e.status ?? 'present', e.excuseReason, e.note),
+          e.swimmerId: _Mark(e.status ?? 'absent', e.excuseReason, e.note),
       });
     _changed = false;
     return roster;
@@ -58,13 +58,6 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         widget.session.date,
         isHeadCoach: widget.club.isHeadCoach,
       );
-
-  void _set(String swimmerId, String status) => setState(() {
-    final m = _marks[swimmerId]!;
-    m.status = status;
-    if (status != 'excused') m.reason = null;
-    _changed = true;
-  });
 
   void _allPresent() => setState(() {
     for (final m in _marks.values) {
@@ -300,8 +293,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
             child: Text(
-              'Not taken yet. Everyone starts as Present: tap the '
-              'exceptions, then Save.',
+              'Not taken yet. Everyone starts as Absent: pick a mark for '
+              'each swimmer who came (or tap All present), then Save.',
               style: text.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
             ),
           ),
@@ -322,30 +315,50 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
               ),
             ),
           ),
-        const Divider(height: 24),
+        const Divider(height: 16),
         if (roster.isEmpty)
           const Padding(
             padding: EdgeInsets.all(24),
             child: Text('No swimmers were in this group on this day.'),
           ),
         for (final e in roster) _swimmerRow(e),
-        const Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Text(
-            'P present   A absent   L late   U early-up   '
-            'D did not finish   E excused',
-          ),
-        ),
       ],
     );
   }
 
+  /// The dropdown choices: each mark, with Excused split by reason so one
+  /// tap sets both. Values look like "late" or "excused:medical".
+  static final _choices = [
+    for (final st in attendanceStatuses)
+      if (st == 'excused')
+        for (final r in excuseReasons) 'excused:$r'
+      else
+        st,
+  ];
+
+  static String _choiceLabel(String choice) => choice.startsWith('excused:')
+      ? 'Excused (${excuseLabel(choice.substring(8))})'
+      : attendanceLabel(choice);
+
+  Color _choiceColour(String status, ColorScheme scheme) => switch (status) {
+    'present' => Colors.green.shade700,
+    'absent' => scheme.error,
+    'excused' => Colors.blueGrey,
+    _ => Colors.orange.shade800,
+  };
+
+  /// One line per swimmer: name, note button and a dropdown with the mark.
   Widget _swimmerRow(RosterEntry e) {
     final m = _marks[e.swimmerId]!;
     final edit = _canEdit;
     final scheme = Theme.of(context).colorScheme;
+    // An Excused mark with no reason yet (from older data) shows as
+    // "Excused (Medical)" only once a reason is picked.
+    final value = m.status == 'excused'
+        ? (m.reason == null ? null : 'excused:${m.reason}')
+        : m.status;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 4, 8, 8),
+      padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -355,11 +368,13 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 child: Text(
                   e.fullName,
                   style: Theme.of(context).textTheme.titleSmall,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (edit || m.note != null)
                 IconButton(
                   tooltip: m.note == null ? 'Add a note' : 'Edit note',
+                  visualDensity: VisualDensity.compact,
                   icon: Icon(
                     m.note == null
                         ? Icons.note_add_outlined
@@ -367,57 +382,50 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                   ),
                   onPressed: edit ? () => _editNote(e) : null,
                 ),
-            ],
-          ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 4,
-            children: [
-              for (final st in attendanceStatuses)
-                ChoiceChip(
-                  label: Text(attendanceLetter(st)),
-                  tooltip: attendanceLabel(st),
-                  showCheckmark: false,
-                  selected: m.status == st,
-                  onSelected: edit ? (_) => _set(e.swimmerId, st) : null,
-                ),
-            ],
-          ),
-          if (m.status == 'excused')
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Wrap(
-                spacing: 6,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  Text(
-                    'Excused:',
-                    style: TextStyle(
-                      color: m.reason == null ? scheme.error : null,
-                    ),
-                  ),
-                  for (final r in excuseReasons)
-                    ChoiceChip(
-                      label: Text(excuseLabel(r)),
-                      selected: m.reason == r,
-                      onSelected: edit
-                          ? (_) => setState(() {
-                              m.reason = r;
-                              _changed = true;
-                            })
-                          : null,
+              DropdownButton<String>(
+                value: value,
+                hint: const Text('Pick a reason'),
+                underline: const SizedBox.shrink(),
+                onChanged: edit
+                    ? (choice) {
+                        if (choice == null) return;
+                        setState(() {
+                          if (choice.startsWith('excused:')) {
+                            m.status = 'excused';
+                            m.reason = choice.substring(8);
+                          } else {
+                            m.status = choice;
+                            m.reason = null;
+                          }
+                          _changed = true;
+                        });
+                      }
+                    : null,
+                items: [
+                  for (final c in _choices)
+                    DropdownMenuItem(
+                      value: c,
+                      child: Text(
+                        _choiceLabel(c),
+                        style: TextStyle(
+                          color: _choiceColour(c.split(':').first, scheme),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                 ],
               ),
-            ),
+            ],
+          ),
           if (m.note != null)
             Padding(
-              padding: const EdgeInsets.only(top: 4),
+              padding: const EdgeInsets.only(bottom: 4),
               child: Text(
                 'Note: ${m.note}',
                 style: TextStyle(color: scheme.onSurfaceVariant),
               ),
             ),
+          const Divider(height: 1),
         ],
       ),
     );
