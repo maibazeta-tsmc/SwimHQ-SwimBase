@@ -8,6 +8,7 @@ import 'group_form.dart';
 import 'groups_screen.dart';
 import 'move_sheet.dart';
 import 'schedule_tab.dart';
+import 'today_tab.dart';
 import 'swimmer_screen.dart';
 
 /// One group's page: its swimmers (with Select to move several at once),
@@ -168,6 +169,77 @@ class _GroupScreenState extends State<GroupScreen> {
     if (moved) _refresh();
   }
 
+  /// Opens attendance for this group's session today. If there is more
+  /// than one session (or none today), lists the last 7 days to pick from.
+  Future<void> _takeAttendance(Group group) async {
+    final today = dateOnly();
+    List<SessionOverview> sessions;
+    try {
+      sessions = (await loadOverview(
+        widget.club.clubId,
+        today.subtract(const Duration(days: 7)),
+        today,
+      )).where((s) => s.groupId == group.id && !s.cancelled).toList();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not load the sessions.')),
+        );
+      }
+      return;
+    }
+    if (!mounted) return;
+    sessions.sort((a, b) {
+      final byDate = b.date.compareTo(a.date);
+      return byDate != 0 ? byDate : b.start.compareTo(a.start);
+    });
+    final todays = [
+      for (final s in sessions)
+        if (dateOnly(s.date) == today) s,
+    ];
+    if (todays.length == 1) {
+      await openAttendance(context, widget.club, todays.first);
+      return;
+    }
+    if (sessions.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${group.name} has no sessions in the last 7 days. Add them '
+            'on the Schedule tab.',
+          ),
+        ),
+      );
+      return;
+    }
+    final chosen = await showModalBottomSheet<SessionOverview>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: ListView(
+          shrinkWrap: true,
+          children: [
+            ListTile(
+              title: Text('Take attendance for ${group.name}'),
+              subtitle: Text(
+                todays.isEmpty
+                    ? 'No session today. Pick a recent one.'
+                    : 'Pick a session.',
+              ),
+            ),
+            for (final s in sessions)
+              SessionAttendanceTile(
+                session: s,
+                showDate: true,
+                onTap: () => Navigator.pop(context, s),
+              ),
+          ],
+        ),
+      ),
+    );
+    if (chosen == null || !mounted) return;
+    await openAttendance(context, widget.club, chosen);
+  }
+
   Future<void> _openSwimmer(Swimmer s) async {
     await Navigator.of(context).push(
       MaterialPageRoute(
@@ -246,6 +318,18 @@ class _GroupScreenState extends State<GroupScreen> {
                       ],
                     ),
             ),
+            // Small round button, bottom left: take attendance for this
+            // group's session today (or a recent one).
+            floatingActionButtonLocation:
+                FloatingActionButtonLocation.startFloat,
+            floatingActionButton: !unassigned && club.isCoach && !_selecting
+                ? FloatingActionButton.small(
+                    heroTag: 'take-attendance',
+                    tooltip: 'Take attendance',
+                    onPressed: () => _takeAttendance(group!),
+                    child: const Icon(Icons.fact_check_outlined),
+                  )
+                : null,
             bottomNavigationBar: _selecting
                 ? SafeArea(
                     child: Padding(
