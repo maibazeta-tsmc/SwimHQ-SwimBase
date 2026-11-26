@@ -126,6 +126,8 @@ club's head coach.
    of the home screen. Tap **Approve**.
 4. Tap your club to open its **Groups**. Make groups, add swimmers, and move
    them up or down.
+5. In the **Club** tab, invite coaches and turn their two switches on or off.
+   Tap a swimmer to make their login code or a parent code.
 
 Supabase's free plan only sends a few sign-up emails per hour. If a
 confirmation email doesn't arrive, wait a while, or in Supabase go to
@@ -189,7 +191,6 @@ Android phones can install a test version later without a Google Play account.
 
 ## What's next
 
-Later phases add: invite codes and coach permissions on screen, group
-schedules, swimmer and parent dashboards, training sessions and
+Later phases add: group schedules, swimmer and parent dashboards, training sessions and
 attendance, events, personal bests from Hy-Tek PDFs, team records, and push
 notifications (with Firebase).

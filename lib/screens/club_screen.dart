@@ -1,19 +1,47 @@
 import 'package:material_ui/material_ui.dart';
 
 import '../models.dart';
+import 'club_tab.dart';
 import 'groups_screen.dart';
 
-/// A coach's view of one club. For now it opens straight on Groups; the
-/// Today, Calendar, Times and Club tabs are added in later updates.
-class ClubScreen extends StatelessWidget {
+/// A coach's view of one club, with Groups and Club tabs at the bottom.
+/// Today, Calendar and Times are added in later updates.
+class ClubScreen extends StatefulWidget {
   const ClubScreen({super.key, required this.club});
   final Membership club;
 
   @override
+  State<ClubScreen> createState() => _ClubScreenState();
+}
+
+class _ClubScreenState extends State<ClubScreen> {
+  int _tab = 0;
+
+  @override
   Widget build(BuildContext context) {
+    final club = widget.club;
     return Scaffold(
-      appBar: AppBar(title: Text('${club.clubName}: Groups')),
-      body: GroupsScreen(club: club),
+      appBar: AppBar(title: Text(club.clubName)),
+      body: IndexedStack(
+        index: _tab,
+        children: [
+          GroupsScreen(club: club),
+          ClubTab(
+            club: club,
+            // After a head coach handover, go back to the home screen so
+            // the club opens again with the new permissions.
+            onRoleChanged: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _tab,
+        onDestinationSelected: (i) => setState(() => _tab = i),
+        destinations: const [
+          NavigationDestination(icon: Icon(Icons.groups), label: 'Groups'),
+          NavigationDestination(icon: Icon(Icons.badge), label: 'Club'),
+        ],
+      ),
     );
   }
 }
