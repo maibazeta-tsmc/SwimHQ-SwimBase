@@ -2,6 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../logic.dart';
 import '../models.dart';
+import '../widgets/attendance_dashboard.dart';
 import '../widgets/common.dart';
 import 'attendance_screen.dart';
 
@@ -91,8 +92,8 @@ class SessionAttendanceTile extends StatelessWidget {
   }
 }
 
-/// The coach's home tab: which sessions still need attendance, and
-/// today's sessions for every group.
+/// The coach's home tab: the attendance summary, which sessions still
+/// need attendance, and today's sessions for every group.
 class TodayTab extends StatefulWidget {
   const TodayTab({super.key, required this.club});
   final Membership club;
@@ -103,6 +104,7 @@ class TodayTab extends StatefulWidget {
 
 class _TodayTabState extends State<TodayTab> {
   late Future<List<SessionOverview>> _sessions = _load();
+  int _refreshCount = 0;
 
   Future<List<SessionOverview>> _load() {
     final today = dateOnly();
@@ -113,7 +115,10 @@ class _TodayTabState extends State<TodayTab> {
     );
   }
 
-  void _refresh() => setState(() => _sessions = _load());
+  void _refresh() => setState(() {
+    _sessions = _load();
+    _refreshCount++;
+  });
 
   Future<void> _open(SessionOverview s) async {
     if (await openAttendance(context, widget.club, s) && mounted) _refresh();
@@ -155,6 +160,10 @@ class _TodayTabState extends State<TodayTab> {
           child: ListView(
             padding: const EdgeInsets.only(bottom: 24),
             children: [
+              AttendanceDashboard(
+                club: widget.club,
+                refreshCount: _refreshCount,
+              ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
                 child: Text(

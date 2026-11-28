@@ -42,8 +42,8 @@ String cleanSupabaseUrl(String value) {
   var v = cleanValue(value);
   if (v.isEmpty) return v;
 
-  final dashboard =
-      RegExp(r'supabase\.com/dashboard/project/([a-z0-9]+)').firstMatch(v);
+  final dashboard = RegExp(r'supabase\.com/dashboard/project/([a-z0-9]+)')
+      .firstMatch(v);
   if (dashboard != null) {
     return 'https://${dashboard.group(1)}.supabase.co';
   }
@@ -60,6 +60,9 @@ String cleanSupabaseUrl(String value) {
 
   // Self-hosted or local addresses: keep the path, minus known API suffixes.
   var path = uri.path.replaceAll(RegExp(r'/+$'), '');
-  path = path.replaceAll(RegExp(r'/(rest|auth|storage|realtime|functions)/v1$'), '');
+  path = path.replaceAll(
+    RegExp(r'/(rest|auth|storage|realtime|functions)/v1$'),
+    '',
+  );
   return '${uri.scheme}://${uri.authority}$path';
 }

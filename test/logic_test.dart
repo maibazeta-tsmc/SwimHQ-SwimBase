@@ -93,6 +93,54 @@ void main() {
     },
   );
 
+  test('dashboard periods start on Monday, the 1st, and 1 January', () {
+    final sat = DateTime(2026, 11, 28); // a Saturday
+    expect(dashboardPeriodStart('week', sat), DateTime(2026, 11, 23));
+    expect(
+      dashboardPeriodStart('week', DateTime(2026, 11, 23)),
+      DateTime(2026, 11, 23),
+    );
+    expect(dashboardPeriodStart('month', sat), DateTime(2026, 11, 1));
+    expect(dashboardPeriodStart('season', sat), DateTime(2026, 1, 1));
+  });
+
+  test('dashboard adds up groups and lists lowest swimmers first', () {
+    AttendanceCountRow row(
+      String swimmer,
+      String group,
+      int level,
+      Map<String, int> counts, {
+      bool active = true,
+    }) => AttendanceCountRow(
+      swimmerId: swimmer,
+      swimmerName: swimmer,
+      groupId: group,
+      groupName: group,
+      groupLevel: level,
+      currentGroupId: 'Gold',
+      currentGroupName: 'Gold',
+      counts: counts,
+      active: active,
+    );
+    final data = AttendanceDashboardData([
+      row('Ana', 'Gold', 3, {'present': 4}),
+      row('Ben', 'Gold', 3, {'present': 1, 'absent': 1, 'late': 2}),
+      // Ben also swam two sessions in Silver before moving up.
+      row('Ben', 'Silver', 2, {'absent': 2}),
+      row('Cy', 'Silver', 2, {'excused': 3}), // nothing that counts
+      row('Dee', 'Silver', 2, {'absent': 5}, active: false), // left
+    ]);
+    expect(data.club.percent, 40); // 6 points from 15 marks that count
+    expect([for (final g in data.groups) g.name], ['Gold', 'Silver']);
+    expect(data.groups.first.summary.percent, 75); // 6 of 8
+    expect(data.groups.last.summary.percent, 0);
+    // Cy has only Excused marks and Dee has left, so neither is listed.
+    expect([for (final s in data.swimmers) s.name], ['Ben', 'Ana']);
+    expect(data.swimmers.first.summary.percent, 33); // 2 of 6
+    expect(data.swimmers.first.groupName, 'Gold');
+    expect(AttendanceDashboardData([]).isEmpty, isTrue);
+  });
+
   test('coaches can mark for 7 days, then only the head coach', () {
     final today = DateTime(2026, 11, 26);
     bool can(DateTime d, {bool head = false}) =>

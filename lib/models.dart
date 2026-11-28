@@ -368,6 +368,65 @@ class SessionOverview {
   bool get isMarked => marked > 0;
 }
 
+/// How many of each mark one swimmer got in one group's sessions over a
+/// period (from club_attendance_summary). Used by the coach dashboard.
+class AttendanceCountRow {
+  AttendanceCountRow({
+    required this.swimmerId,
+    required this.swimmerName,
+    required this.groupId,
+    required this.groupName,
+    required this.counts,
+    this.groupLevel,
+    this.groupColour,
+    this.currentGroupId,
+    this.currentGroupName,
+    this.currentGroupLevel,
+    this.currentGroupColour,
+    this.active = true,
+  });
+
+  factory AttendanceCountRow.fromRow(Map<String, dynamic> row) =>
+      AttendanceCountRow(
+        swimmerId: row['swimmer_id'] as String,
+        swimmerName: '${row['first_name'] ?? ''} ${row['last_name'] ?? ''}'
+            .trim(),
+        active: row['swimmer_status'] != 'left',
+        currentGroupId: row['current_group_id'] as String?,
+        currentGroupName: row['current_group_name'] as String?,
+        currentGroupLevel: (row['current_group_level'] as num?)?.toInt(),
+        currentGroupColour: row['current_group_colour'] as String?,
+        groupId: row['group_id'] as String,
+        groupName: row['group_name'] as String? ?? '',
+        groupLevel: (row['group_level'] as num?)?.toInt(),
+        groupColour: row['group_colour'] as String?,
+        counts: {
+          for (final s in const [
+            'present',
+            'late',
+            'early_up',
+            'dnf',
+            'absent',
+            'excused',
+          ])
+            s: (row[s] as num?)?.toInt() ?? 0,
+        },
+      );
+
+  final String swimmerId;
+  final String swimmerName;
+  final bool active;
+  final String? currentGroupId;
+  final String? currentGroupName;
+  final int? currentGroupLevel;
+  final String? currentGroupColour;
+  final String groupId;
+  final String groupName;
+  final int? groupLevel;
+  final String? groupColour;
+  final Map<String, int> counts; // status -> how many
+}
+
 /// One of a swimmer's attendance marks (from swimmer_attendance).
 class AttendanceRecord {
   AttendanceRecord({
