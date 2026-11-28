@@ -5,6 +5,7 @@ import '../models.dart';
 import '../widgets/common.dart';
 import '../widgets/move_history.dart';
 import '../widgets/swimmer_attendance.dart';
+import '../widgets/swimmer_bests.dart';
 import '../widgets/swimmer_schedule.dart';
 import 'groups_screen.dart';
 import 'invite_dialog.dart';
@@ -12,7 +13,7 @@ import 'move_sheet.dart';
 import 'swimmer_form.dart';
 
 /// A swimmer's profile as coaches see it: details, current group, move
-/// buttons and their full group history.
+/// buttons, personal bests, attendance and their full group history.
 class SwimmerScreen extends StatefulWidget {
   const SwimmerScreen({super.key, required this.club, required this.swimmerId});
   final Membership club;
@@ -276,6 +277,19 @@ class _SwimmerScreenState extends State<SwimmerScreen> {
                 swimmerId: swimmer.id,
               ),
               const Divider(),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                child: Text(
+                  'Personal bests',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ),
+              SwimmerBests(
+                key: ValueKey('bests-$_version'),
+                swimmer: swimmer,
+                club: club,
+              ),
+              const Divider(height: 32),
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
                 child: Text(

@@ -292,3 +292,145 @@ bool recentlyUpdated(ClubEvent e, {DateTime? now}) {
 /// A Google Maps search link for a place, so families can get directions.
 Uri mapsLink(String place) =>
     Uri.https('www.google.com', '/maps/search/', {'api': '1', 'query': place});
+
+// ---------- Swim times and personal bests ----------
+
+/// The courses, in the order the screens show them.
+const courses = ['lcm', 'scm'];
+
+/// "LCM 50 m" / "SCM 25 m" for the course toggles.
+String courseShort(String course) => switch (course) {
+  'lcm' => 'LCM 50 m',
+  'scm' => 'SCM 25 m',
+  _ => course,
+};
+
+/// The events a time can be entered for in [course], in the usual order:
+/// Free 50 to 1500; Back, Breast and Fly 50 to 200; IM 100 (SCM only),
+/// 200 and 400. The database checks the same list.
+List<SwimEvent> swimEvents(String course) => [
+  for (final d in const [50, 100, 200, 400, 800, 1500]) SwimEvent('free', d),
+  for (final s in const ['back', 'breast', 'fly'])
+    for (final d in const [50, 100, 200]) SwimEvent(s, d),
+  if (course == 'scm') const SwimEvent('im', 100),
+  const SwimEvent('im', 200),
+  const SwimEvent('im', 400),
+];
+
+/// A time in hundredths for people: 2984 -> "29.84", 6542 -> "1:05.42",
+/// 96233 -> "16:02.33".
+String formatSwimTime(int cs) {
+  final minutes = cs ~/ 6000;
+  final seconds = (cs % 6000) ~/ 100;
+  final hundredths = (cs % 100).toString().padLeft(2, '0');
+  if (minutes == 0) return '$seconds.$hundredths';
+  return '$minutes:${seconds.toString().padLeft(2, '0')}.$hundredths';
+}
+
+/// A difference between two times: "-0.68", "+1.20".
+String formatTimeDiff(int cs) =>
+    '${cs < 0 ? '-' : '+'}${formatSwimTime(cs.abs())}';
+
+/// A time the coach typed, in hundredths, or null if it can't be read.
+/// Takes "1:05.42", "65.42", "29.8" (tenths), "1:05" or "1.05.42".
+int? parseSwimTime(String text) {
+  var t = text.trim().replaceAll(',', '.').replaceAll(' ', '');
+  var minutes = 0;
+  // "1.05.42" means 1:05.42.
+  if (!t.contains(':') && '.'.allMatches(t).length == 2) {
+    t = t.replaceFirst('.', ':');
+  }
+  if (t.contains(':')) {
+    final parts = t.split(':');
+    if (parts.length != 2 || !RegExp(r'^\d{1,2}$').hasMatch(parts[0])) {
+      return null;
+    }
+    minutes = int.parse(parts[0]);
+    t = parts[1];
+    if (!RegExp(r'^\d{2}(\.\d{1,2})?$').hasMatch(t)) return null;
+  }
+  final m = RegExp(r'^(\d{1,3})(?:\.(\d{1,2}))?$').firstMatch(t);
+  if (m == null) return null;
+  final seconds = int.parse(m.group(1)!);
+  if (minutes > 0 && seconds >= 60) return null;
+  final fraction = (m.group(2) ?? '0').padRight(2, '0');
+  final cs = (minutes * 60 + seconds) * 100 + int.parse(fraction);
+  return cs > 0 && cs < 360000 ? cs : null;
+}
+
+/// The fastest swim (earliest if tied) per event in [course]: the
+/// swimmer's personal bests, in the usual event order.
+List<SwimResult> personalBests(Iterable<SwimResult> results, String course) {
+  final best = <SwimEvent, SwimResult>{};
+  for (final r in results.where((r) => r.course == course)) {
+    final b = best[r.event];
+    if (b == null ||
+        r.timeCs < b.timeCs ||
+        (r.timeCs == b.timeCs && r.date.isBefore(b.date))) {
+      best[r.event] = r;
+    }
+  }
+  return [
+    for (final e in swimEvents(course))
+      if (best[e] != null) best[e]!,
+  ];
+}
+
+/// Every swim in one event and course, fastest first.
+List<SwimResult> swimsIn(
+  Iterable<SwimResult> results,
+  String course,
+  SwimEvent event,
+) =>
+    results.where((r) => r.course == course && r.event == event).toList()
+      ..sort((a, b) {
+        final byTime = a.timeCs.compareTo(b.timeCs);
+        return byTime != 0 ? byTime : a.date.compareTo(b.date);
+      });
+
+/// True when a PB was swum in the last 30 days, so it shows as NEW.
+bool isNewPb(SwimResult r, {DateTime? today}) =>
+    !dateOnly(r.date)
+        .isBefore(dateOnly(today).subtract(const Duration(days: 30)));
+
+/// The age groups the Team bests filter offers: label and ages (to is
+/// null for "and over").
+const ageGroups = <(String, int, int?)>[
+  ('10 & under', 0, 10),
+  ('11-12', 11, 12),
+  ('13-14', 13, 14),
+  ('15-17', 15, 17),
+  ('18 & over', 18, null),
+];
+
+/// One line of the Team bests ranking.
+class TeamBest {
+  TeamBest(this.swimmer, this.best);
+  final Swimmer swimmer;
+  final SwimResult best;
+}
+
+/// Each swimmer's best in one event, fastest first. Only swimmers in
+/// [swimmers] (already filtered by group, gender and age) are ranked.
+List<TeamBest> teamRanking(
+  Iterable<SwimResult> results,
+  Iterable<Swimmer> swimmers,
+) {
+  final byId = {for (final s in swimmers) s.id: s};
+  final best = <String, SwimResult>{};
+  for (final r in results) {
+    if (!byId.containsKey(r.swimmerId)) continue;
+    final b = best[r.swimmerId];
+    if (b == null ||
+        r.timeCs < b.timeCs ||
+        (r.timeCs == b.timeCs && r.date.isBefore(b.date))) {
+      best[r.swimmerId] = r;
+    }
+  }
+  final list = [for (final e in best.entries) TeamBest(byId[e.key]!, e.value)]
+    ..sort((a, b) {
+      final byTime = a.best.timeCs.compareTo(b.best.timeCs);
+      return byTime != 0 ? byTime : a.best.date.compareTo(b.best.date);
+    });
+  return list;
+}

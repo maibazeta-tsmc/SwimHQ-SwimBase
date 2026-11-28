@@ -15,4 +15,5 @@ $PSQL -d "$DB" -o /dev/null -f supabase/tests/privacy_rules_test.sql
 $PSQL -d "$DB" -o /dev/null -f supabase/tests/schedule_test.sql
 $PSQL -d "$DB" -o /dev/null -f supabase/tests/attendance_test.sql
 $PSQL -d "$DB" -o /dev/null -f supabase/tests/events_test.sql
+$PSQL -d "$DB" -o /dev/null -f supabase/tests/personal_bests_test.sql
 dropdb "$DB"

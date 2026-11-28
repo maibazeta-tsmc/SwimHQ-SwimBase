@@ -3,11 +3,14 @@ import 'package:material_ui/material_ui.dart';
 import '../models.dart';
 import '../widgets/common.dart';
 import '../widgets/swimmer_attendance.dart';
+import '../widgets/swimmer_bests.dart';
 import '../widgets/swimmer_events.dart';
 import '../widgets/swimmer_schedule.dart';
+import 'team_bests_screen.dart';
 
 /// What a swimmer or parent sees when they open their club: upcoming
-/// events, the training schedule and attendance. PBs come later.
+/// events, personal bests, the training schedule and attendance.
+/// Swimmers can also open Team bests; parents can't.
 /// A parent with several children picks a child at the top.
 class FamilyScreen extends StatefulWidget {
   const FamilyScreen({super.key, required this.club});
@@ -111,6 +114,35 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 ),
                 const Divider(height: 32),
                 Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+                  child: Text(
+                    '${chosen.firstName}\'s personal bests',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                SwimmerBests(
+                  key: ValueKey('bests-${chosen.id}-$_version'),
+                  swimmer: chosen,
+                  club: widget.club,
+                ),
+                if (widget.club.role == 'swimmer')
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: OutlinedButton.icon(
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => TeamBestsScreen(club: widget.club),
+                          ),
+                        ),
+                        icon: const Icon(Icons.leaderboard_outlined),
+                        label: const Text('Team bests'),
+                      ),
+                    ),
+                  ),
+                const Divider(height: 32),
+                Padding(
                   padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
                   child: Text(
                     '${chosen.firstName}\'s next training',
@@ -134,10 +166,6 @@ class _FamilyScreenState extends State<FamilyScreen> {
                 SwimmerAttendance(
                   key: ValueKey('attendance-${chosen.id}-$_version'),
                   swimmerId: chosen.id,
-                ),
-                const Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Text('Personal bests are coming in a later update.'),
                 ),
               ],
             ),

@@ -471,3 +471,83 @@ class ClubEvent {
 
 /// The columns the coach screens read for events.
 const eventColumns = '*, event_groups(group_id), rest_days(id)';
+
+/// One swim: a time a coach entered for a swimmer in one event.
+class SwimResult {
+  SwimResult({
+    required this.id,
+    required this.swimmerId,
+    required this.course,
+    required this.stroke,
+    required this.distance,
+    required this.timeCs,
+    required this.meetName,
+    required this.date,
+    this.eventId,
+    this.createdAt,
+  });
+
+  factory SwimResult.fromRow(Map<String, dynamic> row) => SwimResult(
+    id: row['id'] as String,
+    swimmerId: row['swimmer_id'] as String,
+    course: row['course'] as String,
+    stroke: row['stroke'] as String,
+    distance: (row['distance'] as num).toInt(),
+    timeCs: (row['time_cs'] as num).toInt(),
+    meetName: row['meet_name'] as String? ?? '',
+    date: _date(row['swim_date'])!,
+    eventId: row['event_id'] as String?,
+    createdAt: row['created_at'] == null
+        ? null
+        : DateTime.parse(row['created_at'] as String).toLocal(),
+  );
+
+  final String id;
+  final String swimmerId;
+  final String course; // lcm or scm
+  final String stroke; // free, back, breast, fly or im
+  final int distance; // metres
+  final int timeCs; // hundredths of a second: 1:05.42 = 6542
+  final String meetName;
+  final DateTime date;
+  final String? eventId; // the meet in Events, if one was picked
+  final DateTime? createdAt;
+
+  /// The event this swim was in, e.g. 100 Free.
+  SwimEvent get event => SwimEvent(stroke, distance);
+}
+
+/// The columns the screens read for swim times.
+const swimResultColumns =
+    'id, swimmer_id, course, stroke, distance, time_cs, meet_name, '
+    'swim_date, event_id, created_at';
+
+/// A swimming event like 100 Free (stroke and distance, any course).
+class SwimEvent {
+  const SwimEvent(this.stroke, this.distance);
+  final String stroke;
+  final int distance;
+
+  /// "100 Free", "200 IM".
+  String get label =>
+      '$distance ${switch (stroke) {
+        'free' => 'Free',
+        'back' => 'Back',
+        'breast' => 'Breast',
+        'fly' => 'Fly',
+        'im' => 'IM',
+        _ => stroke,
+      }}';
+
+  @override
+  bool operator ==(Object other) =>
+      other is SwimEvent &&
+      other.stroke == stroke &&
+      other.distance == distance;
+
+  @override
+  int get hashCode => Object.hash(stroke, distance);
+
+  @override
+  String toString() => label;
+}

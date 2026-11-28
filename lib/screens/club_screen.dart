@@ -4,10 +4,11 @@ import '../models.dart';
 import 'club_tab.dart';
 import 'events_tab.dart';
 import 'groups_screen.dart';
+import 'times_tab.dart';
 import 'today_tab.dart';
 
-/// A coach's view of one club, with Today, Groups, Events and Club tabs at
-/// the bottom. Times are added in a later update.
+/// A coach's view of one club, with Today, Groups, Events, Times and Club
+/// tabs at the bottom.
 class ClubScreen extends StatefulWidget {
   const ClubScreen({super.key, required this.club});
   final Membership club;
@@ -30,6 +31,7 @@ class _ClubScreenState extends State<ClubScreen> {
           TodayTab(club: club),
           GroupsScreen(club: club),
           EventsTab(club: club),
+          TimesTab(club: club),
           ClubTab(
             club: club,
             // After a head coach handover, go back to the home screen so
@@ -45,6 +47,7 @@ class _ClubScreenState extends State<ClubScreen> {
           NavigationDestination(icon: Icon(Icons.today), label: 'Today'),
           NavigationDestination(icon: Icon(Icons.groups), label: 'Groups'),
           NavigationDestination(icon: Icon(Icons.event), label: 'Events'),
+          NavigationDestination(icon: Icon(Icons.timer), label: 'Times'),
           NavigationDestination(icon: Icon(Icons.badge), label: 'Club'),
         ],
       ),
