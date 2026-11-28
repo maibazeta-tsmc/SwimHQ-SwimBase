@@ -286,7 +286,12 @@ class _EventFormScreenState extends State<EventFormScreen> {
   @override
   Widget build(BuildContext context) {
     final text = Theme.of(context).textTheme;
-    const gap = SizedBox(height: 16);
+    const gap = SizedBox(height: 10);
+    const compact = VisualDensity(horizontal: -2, vertical: -3);
+    final smallButton = OutlinedButton.styleFrom(
+      visualDensity: compact,
+      padding: const EdgeInsets.symmetric(horizontal: 12),
+    );
     return Scaffold(
       appBar: AppBar(
         title: Text(_old == null ? 'New event' : 'Edit event'),
@@ -307,18 +312,21 @@ class _EventFormScreenState extends State<EventFormScreen> {
         ],
       ),
       body: ListView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         children: [
           TextField(
             controller: _title,
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(
+              isDense: true,
               labelText: 'Title',
               hintText: 'e.g. Dec Age Group Champs',
             ),
           ),
           gap,
           SegmentedButton<String>(
+            style: const ButtonStyle(visualDensity: compact),
+            showSelectedIcon: false,
             segments: [
               for (final k in eventKinds)
                 ButtonSegment(value: k, label: Text(eventKindLabel(k))),
@@ -327,15 +335,15 @@ class _EventFormScreenState extends State<EventFormScreen> {
             onSelectionChanged: (s) => setState(() => _kind = s.first),
           ),
           gap,
-          Text('When', style: text.titleSmall),
-          const SizedBox(height: 8),
+          // Days, then "All day" or the times, each on one short row.
           Wrap(
             spacing: 8,
-            runSpacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today, size: 18),
-                label: Text('First day  ${formatDate(_startDate)}'),
+              OutlinedButton(
+                style: smallButton,
+                child: Text('From ${formatDayShort(_startDate)}'),
                 onPressed: () async {
                   final d = await _pickDate(
                     'First day',
@@ -351,9 +359,9 @@ class _EventFormScreenState extends State<EventFormScreen> {
                   });
                 },
               ),
-              OutlinedButton.icon(
-                icon: const Icon(Icons.calendar_today, size: 18),
-                label: Text('Last day  ${formatDate(_endDate)}'),
+              OutlinedButton(
+                style: smallButton,
+                child: Text('To ${formatDayShort(_endDate)}'),
                 onPressed: () async {
                   final d = await _pickDate('Last day', _endDate, _startDate);
                   if (d != null) setState(() => _endDate = dateOnly(d));
@@ -361,87 +369,106 @@ class _EventFormScreenState extends State<EventFormScreen> {
               ),
             ],
           ),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('All day'),
-            value: _allDay,
-            onChanged: (v) => setState(() => _allDay = v),
-          ),
-          if (!_allDay)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.schedule, size: 18),
-                  label: Text('Starts  ${formatTime(_start)}'),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              FilterChip(
+                visualDensity: compact,
+                label: const Text('All day'),
+                selected: _allDay,
+                onSelected: (v) => setState(() => _allDay = v),
+              ),
+              if (!_allDay) ...[
+                OutlinedButton(
+                  style: smallButton,
+                  child: Text('Starts ${formatTime(_start)}'),
                   onPressed: () async {
                     final m = await _pickTime('Starts', _start);
                     if (m != null) setState(() => _start = m);
                   },
                 ),
-                OutlinedButton.icon(
-                  icon: const Icon(Icons.schedule, size: 18),
-                  label: Text('Ends  ${formatTime(_end)}'),
+                OutlinedButton(
+                  style: smallButton,
+                  child: Text('Ends ${formatTime(_end)}'),
                   onPressed: () async {
                     final m = await _pickTime('Ends', _end);
                     if (m != null) setState(() => _end = m);
                   },
                 ),
               ],
-            ),
+            ],
+          ),
           gap,
           TextField(
             controller: _venue,
             decoration: const InputDecoration(
-              labelText: 'Place (optional)',
+              isDense: true,
+              labelText: 'Venue (optional)',
               hintText: 'e.g. Rizal Memorial Pool',
             ),
           ),
           if (_kind == 'meet') ...[
             gap,
-            Text('Pool course', style: text.titleSmall),
-            const SizedBox(height: 8),
-            SegmentedButton<String>(
-              emptySelectionAllowed: true,
-              segments: const [
-                ButtonSegment(value: 'lcm', label: Text('LCM (50 m)')),
-                ButtonSegment(value: 'scm', label: Text('SCM (25 m)')),
+            Row(
+              children: [
+                Text('Course', style: text.bodyMedium),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SegmentedButton<String>(
+                    style: const ButtonStyle(visualDensity: compact),
+                    showSelectedIcon: false,
+                    emptySelectionAllowed: true,
+                    segments: const [
+                      ButtonSegment(value: 'lcm', label: Text('LCM 50 m')),
+                      ButtonSegment(value: 'scm', label: Text('SCM 25 m')),
+                    ],
+                    selected: {?_course},
+                    onSelectionChanged: (s) =>
+                        setState(() => _course = s.isEmpty ? null : s.first),
+                  ),
+                ),
               ],
-              selected: {?_course},
-              onSelectionChanged: (s) =>
-                  setState(() => _course = s.isEmpty ? null : s.first),
             ),
           ],
           gap,
-          Text('Who is it for?', style: text.titleSmall),
-          CheckboxListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('Whole club'),
-            value: _wholeClub,
-            onChanged: (v) => setState(() => _wholeClub = v ?? true),
+          Text('For', style: text.bodyMedium),
+          const SizedBox(height: 4),
+          // "Whole club" or any mix of groups.
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              FilterChip(
+                visualDensity: compact,
+                label: const Text('Whole club'),
+                selected: _wholeClub,
+                onSelected: (on) => setState(() {
+                  _wholeClub = on;
+                  if (on) _groupIds.clear();
+                }),
+              ),
+              for (final g in widget.groups)
+                FilterChip(
+                  visualDensity: compact,
+                  label: Text(g.name),
+                  selected: !_wholeClub && _groupIds.contains(g.id),
+                  onSelected: (on) => setState(() {
+                    on ? _groupIds.add(g.id) : _groupIds.remove(g.id);
+                    _wholeClub = _groupIds.isEmpty;
+                  }),
+                ),
+            ],
           ),
-          if (!_wholeClub)
-            Wrap(
-              spacing: 8,
-              runSpacing: 4,
-              children: [
-                for (final g in widget.groups)
-                  FilterChip(
-                    label: Text(g.name),
-                    selected: _groupIds.contains(g.id),
-                    onSelected: (on) => setState(
-                      () => on ? _groupIds.add(g.id) : _groupIds.remove(g.id),
-                    ),
-                  ),
-              ],
-            ),
           gap,
           TextField(
             controller: _notes,
-            minLines: 2,
-            maxLines: 6,
+            minLines: 1,
+            maxLines: 4,
             decoration: const InputDecoration(
+              isDense: true,
               labelText: 'Notes (optional)',
               hintText: 'e.g. Warm-up 6:15 AM. Bring club cap and shirt.',
             ),
@@ -451,32 +478,35 @@ class _EventFormScreenState extends State<EventFormScreen> {
             controller: _link,
             keyboardType: TextInputType.url,
             decoration: const InputDecoration(
+              isDense: true,
               labelText: 'Web link (optional)',
               hintText: 'Meet information page',
             ),
           ),
-          gap,
+          const SizedBox(height: 4),
           CheckboxListTile(
+            dense: true,
+            visualDensity: compact,
             contentPadding: EdgeInsets.zero,
             title: const Text('Cancel training these days'),
             subtitle: Text(
               _wholeClub
-                  ? 'Turns these days into rest days for the whole club.'
-                  : 'Turns these days into rest days for the groups above.',
+                  ? 'Rest days for the whole club.'
+                  : 'Rest days for the groups picked above.',
             ),
             value: _cancelTraining,
             onChanged: (v) => setState(() => _cancelTraining = v ?? false),
           ),
           CheckboxListTile(
+            dense: true,
+            visualDensity: compact,
             contentPadding: EdgeInsets.zero,
             title: Text(
               _old == null
                   ? 'Notify families'
                   : 'Notify families of the change',
             ),
-            subtitle: const Text(
-              'Push notifications are switched on in a later update.',
-            ),
+            subtitle: const Text('Notifications start in a later update.'),
             value: _notify,
             onChanged: (v) => setState(() => _notify = v ?? true),
           ),
