@@ -51,7 +51,8 @@ You only do this once.
 9. Then `20261126000006_daily_moves.sql`.
 10. Then `20261126000007_training_schedules.sql`.
 11. Then `20261126000008_attendance.sql`.
-12. And finally `20261126000009_events.sql`.
+12. Then `20261126000009_events.sql`.
+13. And finally `20261128000010_personal_bests.sql`.
 
 Run the files **in that order**, each **only once**. When a later update adds
 a new file to `supabase/migrations/`, run just that new file the same way. If one shows an
@@ -194,6 +195,5 @@ Android phones can install a test version later without a Google Play account.
 
 ## What's next
 
-Later phases add: group schedules, swimmer and parent dashboards, training sessions and
-attendance, events, personal bests from Hy-Tek PDFs, team records, and push
+Later phases add: reading personal bests from Hy-Tek PDFs, team records, and push
 notifications (with Firebase).
