@@ -188,14 +188,20 @@ double? attendancePoints(String status) => switch (status) {
 
 /// Totals for a list of marks.
 class AttendanceSummary {
-  AttendanceSummary(Iterable<String> statuses) {
+  AttendanceSummary([Iterable<String> statuses = const []]) {
     for (final s in statuses) {
-      counts[s] = (counts[s] ?? 0) + 1;
-      final p = attendancePoints(s);
-      if (p != null) {
-        points += p;
-        counted++;
-      }
+      add(s);
+    }
+  }
+
+  /// Adds [times] marks of [status].
+  void add(String status, [int times = 1]) {
+    if (times <= 0) return;
+    counts[status] = (counts[status] ?? 0) + times;
+    final p = attendancePoints(status);
+    if (p != null) {
+      points += p * times;
+      counted += times;
     }
   }
 
@@ -242,6 +248,111 @@ List<SessionOverview> needsAttendance(
       });
   return list;
 }
+
+// ---------- Attendance dashboard ----------
+
+/// The periods the coach dashboard can show.
+const dashboardPeriods = ['week', 'month', 'season'];
+
+/// "This week", "This month", "This season".
+String dashboardPeriodLabel(String period) => switch (period) {
+  'week' => 'This week',
+  'month' => 'This month',
+  _ => 'This season',
+};
+
+/// The first day of [period] on [today]: Monday of this week, the 1st of
+/// this month, or 1 January (the season runs January to December).
+DateTime dashboardPeriodStart(String period, [DateTime? today]) {
+  final t = dateOnly(today);
+  return switch (period) {
+    'week' => t.subtract(Duration(days: t.weekday - 1)),
+    'month' => DateTime(t.year, t.month, 1),
+    _ => DateTime(t.year, 1, 1),
+  };
+}
+
+/// One group's (or one swimmer's) attendance for the dashboard.
+class AttendanceRate {
+  AttendanceRate({
+    required this.id,
+    required this.name,
+    this.level,
+    this.colour,
+    this.groupName,
+  });
+  final String id;
+  final String name;
+  final int? level; // groups: their level; swimmers: their current group's
+  final String? colour;
+  final String? groupName; // swimmers: their current group
+  final summary = AttendanceSummary();
+}
+
+/// The coach dashboard's numbers, worked out from the rows of
+/// club_attendance_summary.
+class AttendanceDashboardData {
+  AttendanceDashboardData(Iterable<AttendanceCountRow> rows) {
+    final groupById = <String, AttendanceRate>{};
+    final swimmerById = <String, AttendanceRate>{};
+    for (final r in rows) {
+      final group = groupById.putIfAbsent(
+        r.groupId,
+        () => AttendanceRate(
+          id: r.groupId,
+          name: r.groupName,
+          level: r.groupLevel,
+          colour: r.groupColour,
+        ),
+      );
+      _addCounts(group.summary, r);
+      _addCounts(club, r);
+      if (!r.active) continue; // swimmers who left aren't listed
+      final swimmer = swimmerById.putIfAbsent(
+        r.swimmerId,
+        () => AttendanceRate(
+          id: r.swimmerId,
+          name: r.swimmerName,
+          level: r.currentGroupLevel,
+          colour: r.currentGroupColour,
+          groupName: r.currentGroupName,
+        ),
+      );
+      _addCounts(swimmer.summary, r);
+    }
+    groups = groupById.values.toList()
+      ..sort((a, b) {
+        final byLevel = (b.level ?? 0).compareTo(a.level ?? 0);
+        return byLevel != 0 ? byLevel : a.name.compareTo(b.name);
+      });
+    swimmers =
+        swimmerById.values.where((s) => s.summary.percent != null).toList()
+          ..sort((a, b) {
+            final byRate = _rate(a).compareTo(_rate(b));
+            return byRate != 0 ? byRate : a.name.compareTo(b.name);
+          });
+  }
+
+  /// The whole club together.
+  final club = AttendanceSummary();
+
+  /// Every group with marks in the period, top level first.
+  late final List<AttendanceRate> groups;
+
+  /// Swimmers still in the club with marks that count, lowest first.
+  late final List<AttendanceRate> swimmers;
+
+  bool get isEmpty => club.counts.isEmpty;
+
+  static double _rate(AttendanceRate r) => r.summary.points / r.summary.counted;
+
+  static void _addCounts(AttendanceSummary s, AttendanceCountRow r) {
+    r.counts.forEach(s.add);
+  }
+}
+
+/// Attendance below this percentage is shown in red on the dashboard.
+const lowAttendancePercent = 75;
 
 // ---------- Events ----------
 
