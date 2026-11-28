@@ -226,15 +226,12 @@ class _HomeScreenState extends State<HomeScreen> {
               builder: (context, snapshot) {
                 if (snapshot.hasError) {
                   final error = snapshot.error;
-                  final detail = error is PostgrestException
-                      ? error.message
-                      : '$error';
+                  final detail =
+                      error is PostgrestException ? error.message : '$error';
                   return Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
-                      'Could not load your clubs. Pull to retry.\n'
-                      'Details: $detail',
-                    ),
+                    child: Text('Could not load your clubs. Pull to retry.\n'
+                        'Details: $detail'),
                   );
                 }
                 if (!snapshot.hasData) {
@@ -290,14 +287,11 @@ class _HomeScreenState extends State<HomeScreen> {
               future: _clubs,
               builder: (context, snapshot) {
                 final rows = snapshot.data;
-                final show =
-                    rows != null &&
+                final show = rows != null &&
                     (rows.isEmpty ||
-                        rows.any(
-                          (r) =>
-                              r['role'] == 'head_coach' ||
-                              r['role'] == 'assistant_coach',
-                        ));
+                        rows.any((r) =>
+                            r['role'] == 'head_coach' ||
+                            r['role'] == 'assistant_coach'));
                 if (!show) return const SizedBox.shrink();
                 return Padding(
                   padding: const EdgeInsets.only(top: 8),

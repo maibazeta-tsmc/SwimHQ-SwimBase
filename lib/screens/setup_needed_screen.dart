@@ -17,10 +17,8 @@ class SetupNeededScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.pool, size: 64),
                 const SizedBox(height: 16),
-                Text(
-                  'Almost there',
-                  style: Theme.of(context).textTheme.headlineSmall,
-                ),
+                Text('Almost there',
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 const Text(
                   'The app is running, but it is not connected to the database '

@@ -23,10 +23,8 @@ void main() {
   });
 
   test('Local addresses keep their port', () {
-    expect(
-      cleanSupabaseUrl('http://localhost:54321/rest/v1/'),
-      'http://localhost:54321',
-    );
+    expect(cleanSupabaseUrl('http://localhost:54321/rest/v1/'),
+        'http://localhost:54321');
   });
 
   test('Key is trimmed of spaces, line breaks and quotes', () {
